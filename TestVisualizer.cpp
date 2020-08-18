@@ -172,10 +172,11 @@ int main(int argc, char** argv) {
 
             // Registration step
             auto criteria = open3d::registration::ICPConvergenceCriteria();
-            criteria.max_iteration_ = 30000;
+            auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
+            criteria.max_iteration_ = 300000000;
 //            target.SaveImage(im_rgbd);
-            auto registration = registration::RegistrationICP(*source.points_, *target.points_, 0.02, Eigen::MatrixBase<Eigen::Matrix4d>::Identity(),              
-                    open3d::registration::TransformationEstimationPointToPoint(false), criteria);
+            auto registration = registration::RegistrationICP(*source.points_, *pts2, 0.002, Eigen::MatrixBase<Eigen::Matrix4d>::Identity(),              
+                    estimation, criteria);
             pts2->Transform(registration.transformation_);
 
             // Print fitness, RMSE
@@ -187,6 +188,7 @@ int main(int argc, char** argv) {
             utility::LogInfo(log.c_str());
             vis.RemoveGeometry(target.points_);
             vis.AddGeometry(pts2);
+            vis.GetViewControl().FitInGeometry(*pts2);
 
 //            is_geometry_added = true;
             capture_target = false;
