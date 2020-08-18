@@ -14,8 +14,10 @@ namespace Reco3D
         RGBDToPoints();
         ~RGBDToPoints();
         std::shared_ptr<PointCloud> ConvertToPointCloud(std::shared_ptr<RGBDImage>& image);
-    protected:
+        std::shared_ptr<open3d::geometry::RGBDImage> MakeNewRGBDImage(std::shared_ptr<RGBDImage>& image);
+        std::shared_ptr<open3d::geometry::RGBDImage> SaveImage(std::shared_ptr<RGBDImage>& image);
         std::shared_ptr<PointCloud> points_;
+        std::shared_ptr<RGBDImage> image_;
 
     };
 }

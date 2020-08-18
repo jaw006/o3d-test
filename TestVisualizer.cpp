@@ -94,9 +94,8 @@ int main(int argc, char** argv) {
         
 
     // Init RGBDToPoints
-    Reco3D::RGBDToPoints converter;
-    utility::Timer time;
-    double min_time_elapsed = 100.0;
+    Reco3D::RGBDToPoints source;
+    Reco3D::RGBDToPoints target;
 
     // Init sensor
     io::AzureKinectSensor sensor(sensor_config);
@@ -108,7 +107,9 @@ int main(int argc, char** argv) {
     // Start viewing
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool capture_image = false;
+    bool capture_source = false;
+    bool capture_target = false;
+    bool clear = false;
     visualization::VisualizerWithKeyCallback vis;
     vis.RegisterKeyCallback(GLFW_KEY_ESCAPE,
         [&](visualization::Visualizer* vis) {
@@ -117,7 +118,17 @@ int main(int argc, char** argv) {
         });
     vis.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
-            capture_image = true;
+            capture_source = true;
+            return false;
+        });
+    vis.RegisterKeyCallback(GLFW_KEY_T,
+        [&](visualization::Visualizer* vis) {
+            capture_target = true;
+            return false;
+        });
+    vis.RegisterKeyCallback(GLFW_KEY_C,
+        [&](visualization::Visualizer* vis) {
+            clear = true;
             return false;
         });
 
@@ -132,23 +143,59 @@ int main(int argc, char** argv) {
             continue;
         }
 
-//        if (!is_geometry_added) {
-//            vis.AddGeometry(im_rgbd);
-//            is_geometry_added = true;
-//        }
-        auto pts = converter.ConvertToPointCloud(im_rgbd);
-        if (!is_geometry_added || capture_image) {
+
+        if (!is_geometry_added || capture_source) {
+            auto pts = source.ConvertToPointCloud(im_rgbd);
             utility::LogInfo("Updating geo.");
             vis.AddGeometry(pts);
+//            source.SaveImage(im_rgbd);
             is_geometry_added = true;
-            capture_image = false;
+            capture_source = false;
+//            source.points_->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+            if (clear)
+            {
+                vis.ClearGeometries();
+                utility::LogInfo("Clearing geometry.");
+                if (is_geometry_added)
+                {
+                    vis.AddGeometry(pts);
+                }
+                clear = false;
+                vis.UpdateRender();
+                continue;
+            }
+        }
+
+        if (capture_target) {
+            auto pts2 = target.ConvertToPointCloud(im_rgbd);
+            utility::LogInfo("Updating target.");
+
+            // Registration step
+            auto criteria = open3d::registration::ICPConvergenceCriteria();
+            criteria.max_iteration_ = 30000;
+//            target.SaveImage(im_rgbd);
+            auto registration = registration::RegistrationICP(*source.points_, *target.points_, 0.02, Eigen::MatrixBase<Eigen::Matrix4d>::Identity(),              
+                    open3d::registration::TransformationEstimationPointToPoint(false), criteria);
+            pts2->Transform(registration.transformation_);
+
+            // Print fitness, RMSE
+            double& fitness = registration.fitness_; 
+            double& rmse = registration.inlier_rmse_;
+            std::string log = "Fitness= " + std::to_string(fitness) + ";RMSE= " + std::to_string(rmse);
+
+//            target.points_->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
+            utility::LogInfo(log.c_str());
+            vis.RemoveGeometry(target.points_);
+            vis.AddGeometry(pts2);
+
+//            is_geometry_added = true;
+            capture_target = false;
         }
 //        if (capture_image)
 //        {
 //            vis.UpdateGeometry();
 //            capture_image = false;
 //        }
-
         vis.UpdateGeometry();
         vis.PollEvents();
         vis.UpdateRender();
