@@ -5,9 +5,10 @@ project(TestVisualizer)
 
 
 # Azure Kinect
-find_package(k4a 1.3.0 QUIET)
-include_directories(${K4A_INCLUDE_DIRS})
-set(BUILD_AZURE_KINECT=ON)
+find_package(k4a CONFIG REQUIRED)
+find_path(K4A_INCLUDE_DIRS k4a/k4a.h)
+
+#set(BUILD_AZURE_KINECT=ON)
 
 # Find installed Open3D, this imports
 #   Open3D_INCLUDE_DIRS
@@ -58,7 +59,11 @@ if (Open3D_FOUND)
 
     target_link_libraries(TestVisualizer ${Open3D_LIBRARIES})
 
+    target_link_libraries(TestVisualizer k4a::k4a)
+
     target_include_directories(TestVisualizer PUBLIC ${Open3D_INCLUDE_DIRS})
+
+    target_include_directories(TestVisualizer PUBLIC ${K4A_INCLUDE_DIRS})
 
     # Hot fix windows dll not found issue, assumming we're using the Release build
     option(BUILD_SHARED_LIBS "Whether Open3D was build as shared library" OFF)
