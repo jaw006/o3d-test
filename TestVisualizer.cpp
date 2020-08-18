@@ -37,6 +37,8 @@
 
 #include <Open3D/Open3D.h>
 
+#include "RGBDToPoints.h"
+
 
 using namespace open3d;
 
@@ -64,7 +66,7 @@ int main(int argc, char** argv) {
         io::AzureKinectSensor::ListDevices();
         return 0;
     }
-
+    
     io::AzureKinectSensorConfig sensor_config;
     if (utility::ProgramOptionExists(argc, argv, "--config")) {
         auto config_filename =
@@ -86,8 +88,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    bool enable_align_depth_to_color =
-        utility::ProgramOptionExists(argc, argv, "-a");
+//    bool enable_align_depth_to_color =
+//        utility::ProgramOptionExists(argc, argv, "-a");
+    bool enable_align_depth_to_color = true;
+        
+
+    // Init RGBDToPoints
+    Reco3D::RGBDToPoints converter;
+    std::shared_ptr<PointCloud> points;
 
     // Init sensor
     io::AzureKinectSensor sensor(sensor_config);
@@ -106,16 +114,31 @@ int main(int argc, char** argv) {
             return false;
         });
 
-    vis.CreateVisualizerWindow("Open3D Azure Kinect Recorder", 1920, 540);
+    //const std::string window_name = "";
+    //vis.CreateVisualizerWindow(window_name);
+
+    vis.CreateVisualizerWindow("A", 1920, 540);
     do {
         auto im_rgbd = sensor.CaptureFrame(enable_align_depth_to_color);
         if (im_rgbd == nullptr) {
             utility::LogInfo("Invalid capture, skipping this frame");
             continue;
         }
+        
+//        if (!is_geometry_added) {
+//            vis.AddGeometry(im_rgbd);
+//            is_geometry_added = true;
+//        }
+
+
+        auto points = converter.ConvertToPointCloud(im_rgbd);
+//        if (points->IsEmpty())
+//        {
+//            std::cerr << "No points in cloud";
+//        }
 
         if (!is_geometry_added) {
-            vis.AddGeometry(im_rgbd);
+            vis.AddGeometry(points);
             is_geometry_added = true;
         }
 

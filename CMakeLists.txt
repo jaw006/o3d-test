@@ -55,7 +55,7 @@ if (Open3D_FOUND)
     # link_directories must be before add_executable
     link_directories(${Open3D_LIBRARY_DIRS})
 
-    add_executable(TestVisualizer TestVisualizer.cpp)
+    add_executable(TestVisualizer TestVisualizer.cpp RGBDToPoints.cpp RGBDToPoints.h)
 
     target_link_libraries(TestVisualizer ${Open3D_LIBRARIES})
 
