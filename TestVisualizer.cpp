@@ -95,7 +95,8 @@ int main(int argc, char** argv) {
 
     // Init RGBDToPoints
     Reco3D::RGBDToPoints converter;
-    std::shared_ptr<PointCloud> points;
+    utility::Timer time;
+    double min_time_elapsed = 100.0;
 
     // Init sensor
     io::AzureKinectSensor sensor(sensor_config);
@@ -107,10 +108,16 @@ int main(int argc, char** argv) {
     // Start viewing
     bool flag_exit = false;
     bool is_geometry_added = false;
+    bool capture_image = false;
     visualization::VisualizerWithKeyCallback vis;
     vis.RegisterKeyCallback(GLFW_KEY_ESCAPE,
         [&](visualization::Visualizer* vis) {
             flag_exit = true;
+            return false;
+        });
+    vis.RegisterKeyCallback(GLFW_KEY_A,
+        [&](visualization::Visualizer* vis) {
+            capture_image = true;
             return false;
         });
 
@@ -124,28 +131,29 @@ int main(int argc, char** argv) {
             utility::LogInfo("Invalid capture, skipping this frame");
             continue;
         }
-        
+
 //        if (!is_geometry_added) {
 //            vis.AddGeometry(im_rgbd);
 //            is_geometry_added = true;
 //        }
-
-
-        auto points = converter.ConvertToPointCloud(im_rgbd);
-//        if (points->IsEmpty())
+        auto pts = converter.ConvertToPointCloud(im_rgbd);
+        if (!is_geometry_added || capture_image) {
+            utility::LogInfo("Updating geo.");
+            vis.AddGeometry(pts);
+            is_geometry_added = true;
+            capture_image = false;
+        }
+//        if (capture_image)
 //        {
-//            std::cerr << "No points in cloud";
+//            vis.UpdateGeometry();
+//            capture_image = false;
 //        }
 
-        if (!is_geometry_added) {
-            vis.AddGeometry(points);
-            is_geometry_added = true;
-        }
-
-        // Update visualizer
         vis.UpdateGeometry();
         vis.PollEvents();
         vis.UpdateRender();
+
+        // Update visualizer
 
     } while (!flag_exit);
 
