@@ -1,0 +1,3 @@
+[submodule "thirdparty/ViveTrackerPosition"]
+	path = thirdparty/ViveTrackerPosition
+	url = git@github.com:jaw006/ViveTrackerPosition.git
