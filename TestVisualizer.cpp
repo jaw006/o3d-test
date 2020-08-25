@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
             // Registration step
             auto criteria = open3d::registration::ICPConvergenceCriteria();
             auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
-            criteria.max_iteration_ = 300000000;
+            criteria.max_iteration_ = 300;
 //            target.SaveImage(im_rgbd);
             auto registration = registration::RegistrationICP(*source.points_, *pts2, 0.002, Eigen::MatrixBase<Eigen::Matrix4d>::Identity(),              
                     estimation, criteria);
