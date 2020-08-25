@@ -65,6 +65,7 @@ if (Open3D_FOUND)
 
     target_include_directories(TestVisualizer PUBLIC ${K4A_INCLUDE_DIRS})
 
+
     # Hot fix windows dll not found issue, assumming we're using the Release build
     option(BUILD_SHARED_LIBS "Whether Open3D was build as shared library" OFF)
     if(WIN32 AND BUILD_SHARED_LIBS)
@@ -85,3 +86,9 @@ if (Open3D_FOUND)
 else ()
     message(SEND_ERROR "Open3D not found")
 endif ()
+
+
+    set(VTPLIB_DIR "thirdparty/ViveTrackerPosition")
+    add_subdirectory(${VTPLIB_DIR})
+    target_include_directories(TestVisualizer PUBLIC "${VTPLIB_DIR}/include")
+    target_link_libraries(TestVisualizer vtplib)
