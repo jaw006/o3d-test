@@ -60,20 +60,55 @@ Eigen::Matrix4d Reco3D::VTPLibInterface::vtpPoseToEigenMatrix4d(vtp::Pose_t& pos
     m(0,0) = (double)rot.m[0][0];
     m(0,1) = (double)rot.m[1][0];
     m(0,2) = (double)rot.m[2][0];
-    m(0,3) = 0.0;
+    m(0,3) = (double)pos.v[0];
     m(1,0) = (double)rot.m[0][1];
     m(1,1) = (double)rot.m[1][1];
     m(1,2) = (double)rot.m[2][1];
-    m(1,3) = 0.0;
+    m(1,3) = (double)pos.v[1];
     m(2,0) = (double)rot.m[0][2];
     m(2,1) = (double)rot.m[1][2];
     m(2,2) = (double)rot.m[2][2];
-    m(2,3) = 0.0;
+    m(2,3) = (double)pos.v[2];
     // Copy position
-    m(3, 0) = (double)pos.v[0];
-    m(3, 1) = (double)pos.v[1];
-    m(3, 2) = (double)pos.v[2];
-    m(3, 3) = (double)1.0;
+    m(3, 0) = 0.0;
+    m(3, 1) = 0.0;
+    m(3, 2) = 0.0;
+    m(3, 3) = 1.0;
+    return m;
+}
+
+Eigen::Vector3d Reco3D::VTPLibInterface::GetTrackerPosition(TrackerId& deviceId)
+{
+    auto p = GetPose(deviceId).Position;
+    return Eigen::Vector3d(
+        (double)p.v[0],
+        (double)p.v[1],
+        (double)p.v[2]
+    );
+}
+
+Eigen::Matrix3d Reco3D::VTPLibInterface::GetTrackerRotation(TrackerId& deviceId)
+{
+    auto r = GetPose(deviceId).Rotation;
+    Eigen::Matrix3d m;
+//    m << r.m[0][0];     
+//    m << r.m[1][0]; 
+//    m << r.m[2][0];
+//    m << r.m[0][1];     
+//    m << r.m[1][1]; 
+//    m << r.m[2][1];
+//    m << r.m[0][2];     
+//    m << r.m[1][2]; 
+//    m << r.m[2][2];
+    m << r.m[0][0];     
+    m << r.m[0][1]; 
+    m << r.m[0][2];
+    m << r.m[1][0];     
+    m << r.m[1][1]; 
+    m << r.m[1][2];
+    m << r.m[2][0];     
+    m << r.m[2][1]; 
+    m << r.m[2][2];
     return m;
 }
 
@@ -90,4 +125,10 @@ void Reco3D::VTPLibInterface::testVTPLibInterface()
 
     std::cerr << "Test: " << vtpPoseToEigenMatrix4d(pose)<< std::endl;
     std::cerr << "End tests ---------" << std::endl;
+}
+
+vtp::Pose_t Reco3D::VTPLibInterface::GetPose(TrackerId& deviceId)
+{
+    auto device = system_->GetDevice(deviceId);
+    return device.GetPose();
 }

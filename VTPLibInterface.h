@@ -17,6 +17,9 @@ namespace Reco3D
         std::vector<TrackerId> GetTrackerIds();
         Eigen::Matrix4d GetTrackerMatrix4d(TrackerId& deviceId);
         Eigen::Matrix4d vtpPoseToEigenMatrix4d(vtp::Pose_t& pose);
+        Eigen::Vector3d GetTrackerPosition(TrackerId& deviceId);
+        Eigen::Matrix3d GetTrackerRotation(TrackerId& deviceId);
+        vtp::Pose_t GetPose(TrackerId& deviceId);
         void testVTPLibInterface();
     };
 }

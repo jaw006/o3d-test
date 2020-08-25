@@ -39,6 +39,7 @@
 
 #include "RGBDToPoints.h"
 #include "VTPLibInterface.h"
+#include "Open3D/Visualization/Utility/GLHelper.h"
 
 
 using namespace open3d;
@@ -173,6 +174,7 @@ int main(int argc, char** argv) {
             return false;
         });
 
+    // Restore view
     //const std::string window_name = "";
     //vis.CreateVisualizerWindow(window_name);
 
@@ -188,6 +190,14 @@ int main(int argc, char** argv) {
         if (!is_geometry_added || capture_source) {
             auto pts = source.ConvertToPointCloud(im_rgbd);
             source.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
+            source.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
+            source.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
+//            auto inv = source.pose_.inverse();
+//            Eigen::Transform<double, 3, Eigen::Affine> f(source.pose_);
+//            pts->Rotate(source.rotation_, Eigen::Vector3d(0, 0, 0));
+//            pts->Translate(source.position_);
+            pts->Transform(source.pose_);
+
             std::cout << "SourcePose:" << source.pose_ << std::endl;
             utility::LogInfo("Updating geo.");
             vis.AddGeometry(pts);
@@ -212,36 +222,59 @@ int main(int argc, char** argv) {
     // REGISTRATION 
     // -----------------------------------------------------------------
 
+        typedef open3d::visualization::GLHelper::GLVector3f GLVec3f;
+        GLVec3f lookAt = vis.GetViewControl().GetLookat();
+
         if (capture_target) {
             auto pts2 = target.ConvertToPointCloud(im_rgbd);
+//            pts2->PaintUniformColor(Eigen::Vector3cf(1, 0, 0));
             target.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
-            std::cout << "TargetPose:" << target.pose_ << std::endl;
+            target.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
+            target.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
+//            pts2->Rotate(rot, Eigen::Vector3d());
 
             utility::LogInfo("Updating target.");
+
             // Registration step
             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
             auto criteria = open3d::registration::ICPConvergenceCriteria();
             // Transformation between source and target is the difference between the two matrices
-            auto init = target.pose_ - source.pose_;
+            auto diff_pos = (source.position_ - target.position_);
+//            target.pose_(0, 3) = target.pose_(0,3) - diff_pos(0);
+//            target.pose_(1, 3) = target.pose_(1,3) - diff_pos(1);
+//            target.pose_(2, 3) = target.pose_(2,3) - diff_pos(2);
+//            target.pose_(3, 3) = 1.0;
+            Eigen::Matrix4d diff_pose = target.pose_ - source.pose_;
+            pts2->Transform(target.pose_);
+
+
+
+            std::cout << "Diffpose: " << diff_pose << std::endl;
+//            pts2->Translate(diff_pos);
+//            pts2->Rotate(rot, Eigen::Vector3d());
+//            pts2->Transform(diff_pose.inverse());
+
+//            source.points_->PaintUniformColor(Eigen::Vector3cf(0, 1, 0));
             criteria.max_iteration_ = 30;
 //            target.SaveImage(im_rgbd);
             
-            std::cout << "Target-Source:" << init << std::endl;
+ //           std::cout << "Target-Source:" << init << std::endl;
+            auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, diff_pose);
+//            auto registration = registration::RegistrationICP(*source.points_, *pts2, 1.0, init, estimation, criteria);
+//           pts2->Transform(registration.transformation_);
+//            // Print fitness, RMSE
+            double& fitness = reg_result.fitness_; 
+            double& rmse = reg_result.inlier_rmse_;
+            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+//            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+//            utility::LogInfo(log1.c_str());
+//            utility::LogInfo(log2.c_str());
 
-            auto registration = registration::RegistrationICP(*source.points_, *pts2, 1.0, init,
-                    estimation, criteria);
-            pts2->Transform(registration.transformation_);
-
-            // Print fitness, RMSE
-            double& fitness = registration.fitness_; 
-            double& rmse = registration.inlier_rmse_;
-            std::string log = "Fitness= " + std::to_string(fitness) + ";RMSE= " + std::to_string(rmse);
-
-//            target.points_->PaintUniformColor(Eigen::Vector3d(1, 0, 0));
-            utility::LogInfo(log.c_str());
             vis.RemoveGeometry(target.points_);
             vis.AddGeometry(pts2);
-            vis.GetViewControl().FitInGeometry(*pts2);
+            lookAt = vis.GetViewControl().GetLookat();
+//            vis.GetViewControl().FitInGeometry(*pts2);
 
 //            is_geometry_added = true;
             capture_target = false;
@@ -251,9 +284,11 @@ int main(int argc, char** argv) {
 //            vis.UpdateGeometry();
 //            capture_image = false;
 //        }
+        
         vis.UpdateGeometry();
         vis.PollEvents();
         vis.UpdateRender();
+//        auto model = vis.GetViewControl().GetLookat();
 
         // Update visualizer
 

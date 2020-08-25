@@ -21,6 +21,8 @@ namespace Reco3D
         std::shared_ptr<PointCloud> points_;
         std::shared_ptr<RGBDImage> image_;
         Eigen::Matrix4d pose_;
+        Eigen::Matrix3d rotation_;
+        Eigen::Vector3d position_;
 
     };
 }

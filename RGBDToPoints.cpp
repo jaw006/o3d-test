@@ -22,9 +22,9 @@ std::shared_ptr<PointCloud> Reco3D::RGBDToPoints::ConvertToPointCloud(std::share
 //    const RGBDImage img = *rgbd_image;
     PinholeCameraIntrinsic intrinsic(1280, 720, 601.1693115234375, 600.85931396484375, 637.83624267578125, 363.8018798828125);
     points_ = open3d::geometry::PointCloud::CreateFromRGBDImage(*rgbd_image, intrinsic);
-    points_->UniformDownSample(1);
-    points_->RemoveStatisticalOutliers(10, 0.1);
-    points_->RemoveRadiusOutliers(10, 1.0);
+//    points_->UniformDownSample(1);
+//    points_->RemoveStatisticalOutliers(10, 0.1);
+//    points_->RemoveRadiusOutliers(10, 1.0);
     return points_;
 }
 
