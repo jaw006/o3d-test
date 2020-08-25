@@ -93,5 +93,5 @@ endif ()
 
     set(VTPLIB_DIR "thirdparty/ViveTrackerPosition")
     add_subdirectory(${VTPLIB_DIR})
-    target_include_directories(TestVisualizer PUBLIC "${VTPLIB_DIR}/include")
+    target_include_directories(TestVisualizer PUBLIC ${VTPLIB_DIR}/include)
     target_link_libraries(TestVisualizer vtplib)
