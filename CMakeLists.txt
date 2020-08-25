@@ -3,6 +3,9 @@ set (CMAKE_CXX_STANDARD 14)
 
 project(TestVisualizer)
 
+set(SRC_FILES TestVisualizer.cpp RGBDToPoints.cpp VTPLibInterface.cpp)
+set(HDR_FILES RGBDToPoints.h VTPLibInterface.h)
+
 
 # Azure Kinect
 find_package(k4a CONFIG REQUIRED)
@@ -55,7 +58,7 @@ if (Open3D_FOUND)
     # link_directories must be before add_executable
     link_directories(${Open3D_LIBRARY_DIRS})
 
-    add_executable(TestVisualizer TestVisualizer.cpp RGBDToPoints.cpp RGBDToPoints.h)
+    add_executable(TestVisualizer ${SRC_FILES} ${HDR_FILES})
 
     target_link_libraries(TestVisualizer ${Open3D_LIBRARIES})
 
