@@ -127,12 +127,16 @@ int main(int argc, char** argv) {
     }
     std::cout << "Using tracker id# " << selectedTrackerId << "for pose" << std::endl;
 
+    vtpInterface->testVTPLibInterface();
+
+
     // -----------------------------------------------------------------
     // BEGIN ALGORITHM
     // -----------------------------------------------------------------
     // Init RGBDToPoints
     Reco3D::RGBDToPoints source;
     Reco3D::RGBDToPoints target;
+
 
     // Init sensor
     io::AzureKinectSensor sensor(sensor_config);
@@ -180,9 +184,11 @@ int main(int argc, char** argv) {
             continue;
         }
 
-
+        // Set source image/pose
         if (!is_geometry_added || capture_source) {
             auto pts = source.ConvertToPointCloud(im_rgbd);
+            source.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
+            std::cout << "SourcePose:" << source.pose_ << std::endl;
             utility::LogInfo("Updating geo.");
             vis.AddGeometry(pts);
 //            source.SaveImage(im_rgbd);
@@ -208,16 +214,21 @@ int main(int argc, char** argv) {
 
         if (capture_target) {
             auto pts2 = target.ConvertToPointCloud(im_rgbd);
-            utility::LogInfo("Updating target.");
+            target.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
+            std::cout << "TargetPose:" << target.pose_ << std::endl;
 
+            utility::LogInfo("Updating target.");
             // Registration step
-            auto init = vtpInterface->GetTrackerMatrix4d(selectedTrackerId);
-            std::cout << init << std::endl;
+            auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
             auto criteria = open3d::registration::ICPConvergenceCriteria();
-            auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
-            criteria.max_iteration_ = 300;
+            // Transformation between source and target is the difference between the two matrices
+            auto init = target.pose_ - source.pose_;
+            criteria.max_iteration_ = 30;
 //            target.SaveImage(im_rgbd);
-            auto registration = registration::RegistrationICP(*source.points_, *pts2, 0.002, init,
+            
+            std::cout << "Target-Source:" << init << std::endl;
+
+            auto registration = registration::RegistrationICP(*source.points_, *pts2, 1.0, init,
                     estimation, criteria);
             pts2->Transform(registration.transformation_);
 

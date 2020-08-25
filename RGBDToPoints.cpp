@@ -1,6 +1,9 @@
 #include "RGBDToPoints.h"
 
-Reco3D::RGBDToPoints::RGBDToPoints()
+Reco3D::RGBDToPoints::RGBDToPoints() :
+    points_(nullptr),
+    image_(nullptr),
+    pose_(Eigen::Matrix4d())
 {
     points_ = std::make_shared<PointCloud>();
 }
@@ -36,6 +39,11 @@ std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::SaveImage(std
 {
     image_ = MakeNewRGBDImage(image);
     return image_;
+}
+
+void Reco3D::RGBDToPoints::SetPose(Eigen::Matrix4d& pose)
+{
+    pose_ = pose;
 }
 
 
