@@ -38,9 +38,11 @@
 #include <Open3D/Open3D.h>
 
 #include "RGBDToPoints.h"
+#include "VTPLibInterface.h"
 
 
 using namespace open3d;
+using namespace Reco3D;
 
 void PrintUsage() {
     PrintOpen3DVersion();
@@ -92,7 +94,42 @@ int main(int argc, char** argv) {
 //        utility::ProgramOptionExists(argc, argv, "-a");
     bool enable_align_depth_to_color = true;
         
+    // -----------------------------------------------------------------
+    // VTPLIB
+    // -----------------------------------------------------------------
 
+    TrackerId preferredTrackerId = 3;
+    TrackerId selectedTrackerId = 0;
+    std::unique_ptr<VTPLibInterface> vtpInterface(new VTPLibInterface());
+    auto ids = vtpInterface->GetTrackerIds();
+
+    if (ids.empty())
+    {
+        std::cout << "Warning: No VIVE Trackers found!";
+    }
+    else
+    {
+        std::cout << "Found devices with ids:(";
+        for(auto id : ids)
+        {
+            std::cout << id << " ";
+        }
+        std::cout << std::endl;
+        // If preferredTrackerId returns identity matrix, use the first other tracker found for position
+        if (!vtpInterface->GetTrackerMatrix4d(preferredTrackerId).isIdentity())
+        {
+            selectedTrackerId = preferredTrackerId;
+        }
+        else
+        {
+            selectedTrackerId = ids[0];
+        }
+    }
+    std::cout << "Using tracker id# " << selectedTrackerId << "for pose" << std::endl;
+
+    // -----------------------------------------------------------------
+    // BEGIN ALGORITHM
+    // -----------------------------------------------------------------
     // Init RGBDToPoints
     Reco3D::RGBDToPoints source;
     Reco3D::RGBDToPoints target;
@@ -165,17 +202,22 @@ int main(int argc, char** argv) {
                 continue;
             }
         }
+    // -----------------------------------------------------------------
+    // REGISTRATION 
+    // -----------------------------------------------------------------
 
         if (capture_target) {
             auto pts2 = target.ConvertToPointCloud(im_rgbd);
             utility::LogInfo("Updating target.");
 
             // Registration step
+            auto init = vtpInterface->GetTrackerMatrix4d(selectedTrackerId);
+            std::cout << init << std::endl;
             auto criteria = open3d::registration::ICPConvergenceCriteria();
             auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
             criteria.max_iteration_ = 300;
 //            target.SaveImage(im_rgbd);
-            auto registration = registration::RegistrationICP(*source.points_, *pts2, 0.002, Eigen::MatrixBase<Eigen::Matrix4d>::Identity(),              
+            auto registration = registration::RegistrationICP(*source.points_, *pts2, 0.002, init,
                     estimation, criteria);
             pts2->Transform(registration.transformation_);
 
@@ -205,6 +247,12 @@ int main(int argc, char** argv) {
         // Update visualizer
 
     } while (!flag_exit);
+
+
+
+    // -----------------------------------------------------------------
+    // CLEANUP
+    // -----------------------------------------------------------------
 
     return 0;
 }
