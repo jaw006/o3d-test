@@ -49,7 +49,6 @@ void Reco3D::RGBDToPoints::SetPose(Eigen::Matrix4d& pose)
 bool Reco3D::RGBDToPoints::ExportCapture(std::string filename)
 {
     return ExportPLY(filename) && ExportPose(filename);
-    
 }
 
 bool Reco3D::RGBDToPoints::ExportPLY(std::string filename)
@@ -74,6 +73,31 @@ bool Reco3D::RGBDToPoints::ExportPose(std::string filename)
         return true;
     }
     return false;
+}
+
+bool Reco3D::RGBDToPoints::ReadPoseFromFile(std::string filename)
+{
+    const std::string extension = ".txt";
+    std::string f = DATA_DIR + filename + extension;
+    std::ifstream file(f);
+    if (file.is_open())
+    {
+        Eigen::Matrix4d m;
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 0; col < 4; col++)
+            {
+                std::string line;
+                file >> std::skipws >> line;
+                m(row, col) = std::stod(line);
+            }
+        }
+        pose_ = m;
+        file.close();
+        return true;
+    }
+    return false;
+
 }
 
 

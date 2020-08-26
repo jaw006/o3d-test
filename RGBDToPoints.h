@@ -32,6 +32,8 @@ namespace Reco3D
         bool ExportPLY(std::string filename);
         bool ExportPose(std::string filename);
 
+        bool ReadPoseFromFile(std::string filename);
+
 
     };
 }

@@ -129,14 +129,15 @@ int main(int argc, char** argv) {
     std::cout << "Using tracker id# " << selectedTrackerId << "for pose" << std::endl;
 
     vtpInterface->testVTPLibInterface();
+    Reco3D::RGBDToPoints test;
+    test.ReadPoseFromFile("testpose");
+    std::cout << "Printing test pose:\n" << test.pose_ << std::endl;
 
 
     // -----------------------------------------------------------------
     // BEGIN ALGORITHM
     // -----------------------------------------------------------------
     // Init RGBDToPoints
-    Reco3D::RGBDToPoints source;
-    Reco3D::RGBDToPoints target;
 
 
     // Init sensor
@@ -189,18 +190,26 @@ int main(int argc, char** argv) {
 // CAPTURE SOURCE
 // -----------------------------------------------------------------
 
+
+    Reco3D::RGBDToPoints source;
+    open3d::geometry::PointCloud existingSource;
+    open3d::geometry::PointCloud existingTarget;
+    Reco3D::RGBDToPoints target;
+    
+
+
         // Set source image/pose
         if (!is_geometry_added || capture_source) {
+            if (!open3d::io::ReadPointCloudFromPLY("data/source.ply", existingSource, false))
+            {
+
+            }
             auto pts = source.ConvertToPointCloud(im_rgbd);
             source.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
             source.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
             source.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
-            source.ExportCapture("source");
-//            auto inv = source.pose_.inverse();
-//            Eigen::Transform<double, 3, Eigen::Affine> f(source.pose_);
-//            pts->Rotate(source.rotation_, Eigen::Vector3d(0, 0, 0));
-//            pts->Translate(source.position_);
             pts->Transform(source.pose_);
+                source.ExportCapture("source");
 
             std::cout << "SourcePose:" << source.pose_ << std::endl;
             utility::LogInfo("Updating geo.");
@@ -235,7 +244,11 @@ int main(int argc, char** argv) {
             target.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
             target.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
             target.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
-            target.ExportCapture("target");
+            open3d::geometry::PointCloud existingTarget;
+
+            // Export only if file doesn't exist
+            if(!open3d::io::ReadPointCloudFromPLY("data/target.ply", existingTarget, false))
+                target.ExportCapture("target");
 //            pts2->Rotate(rot, Eigen::Vector3d());
 
             utility::LogInfo("Updating target.");
