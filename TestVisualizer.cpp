@@ -185,6 +185,9 @@ int main(int argc, char** argv) {
             utility::LogInfo("Invalid capture, skipping this frame");
             continue;
         }
+// -----------------------------------------------------------------
+// CAPTURE SOURCE
+// -----------------------------------------------------------------
 
         // Set source image/pose
         if (!is_geometry_added || capture_source) {
@@ -192,6 +195,7 @@ int main(int argc, char** argv) {
             source.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
             source.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
             source.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
+            source.ExportCapture("source");
 //            auto inv = source.pose_.inverse();
 //            Eigen::Transform<double, 3, Eigen::Affine> f(source.pose_);
 //            pts->Rotate(source.rotation_, Eigen::Vector3d(0, 0, 0));
@@ -231,6 +235,7 @@ int main(int argc, char** argv) {
             target.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
             target.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
             target.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
+            target.ExportCapture("target");
 //            pts2->Rotate(rot, Eigen::Vector3d());
 
             utility::LogInfo("Updating target.");
