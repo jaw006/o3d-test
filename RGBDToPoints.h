@@ -8,6 +8,8 @@
 using namespace open3d::camera;
 using namespace open3d::geometry;
 
+#define DATA_DIR "data/"
+
 namespace Reco3D
 {
 

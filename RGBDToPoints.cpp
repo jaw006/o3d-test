@@ -58,14 +58,14 @@ bool Reco3D::RGBDToPoints::ExportPLY(std::string filename)
     if (!points_)
         return false;
     const open3d::geometry::PointCloud& pts = *points_;
-    open3d::io::WritePointCloudToPLY(filename+extension, pts, false, false, true);
+    open3d::io::WritePointCloudToPLY(DATA_DIR+filename+extension, pts, false, false, true);
     return true;
 }
 
 bool Reco3D::RGBDToPoints::ExportPose(std::string filename)
 {
     const std::string extension = ".txt";
-    std::string f = filename + extension;
+    std::string f = DATA_DIR + filename + extension;
     std::ofstream file(f);
     if (file.is_open())
     {
