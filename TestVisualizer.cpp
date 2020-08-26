@@ -274,7 +274,7 @@ int main(int argc, char** argv) {
 
             utility::LogInfo("Updating target.");
 
-            pts2->Transform(target.pose_.inverse()*source.pose_);
+            pts2->Transform(source.pose_.inverse()*target.pose_);
             pts2->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
             vis.AddGeometry(target.points_);
             is_target_added = true;
