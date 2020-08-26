@@ -273,40 +273,49 @@ int main(int argc, char** argv) {
             }
 
             utility::LogInfo("Updating target.");
+            target.pose_ = source.pose_.inverse() * target.pose_; // Put target relative to source
+            target.points_->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
 
-            pts2->Transform(source.pose_.inverse()*target.pose_);
-            pts2->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-            vis.AddGeometry(target.points_);
-            is_target_added = true;
+//            pts2->Transform(source.pose_.inverse()*target.pose_); // This works I'm pretty sure
+//            pts2->Transform(target.pose_.inverse()*source.pose_);   // Wrong for comparison
+
 
     // -----------------------------------------------------------------
     // REGISTRATION 
     // -----------------------------------------------------------------
+             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+             auto criteria = open3d::registration::ICPConvergenceCriteria();
+             double max_correspondence_distance = 1.0;
+             criteria.max_iteration_ = 300;
+//             auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, target.pose_);
+             auto reg_result = registration::RegistrationICP(
+                 *source.points_,
+                 *target.points_,
+                 max_correspondence_distance,
+                 target.pose_,
+                 estimation,
+                 criteria
+             );
+////            // Print fitness, RMSE
+            double& fitness = reg_result.fitness_; 
+            double& rmse = reg_result.inlier_rmse_;
+            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+            utility::LogInfo(log1.c_str());
+            utility::LogInfo(log2.c_str());
 
-// 
-//             // Registration step
-//             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-//             auto criteria = open3d::registration::ICPConvergenceCriteria();
-//             // Transformation between source and target is the difference between the two matrices
-//             auto diff_pos = (source.position_ - target.position_);
-//             Eigen::Matrix4d diff_pose = target.pose_ - source.pose_;
-// 
-// 
-// 
-// //            std::cout << "Diffpose: " << diff_pose << std::endl;
-// //            criteria.max_iteration_ = 30;
-// //            auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, diff_pose);
-// ////            // Print fitness, RMSE
-// //            double& fitness = reg_result.fitness_; 
-// //            double& rmse = reg_result.inlier_rmse_;
-// //            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-// //            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-// //            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-// //            utility::LogInfo(log1.c_str());
-// //            utility::LogInfo(log2.c_str());
-// //                vis.RemoveGeometry(target.points_);
-//                capture_target = false;
+            target.points_->Transform(reg_result.transformation_);
+//                vis.RemoveGeometry(target.points_);
+            capture_target = false;
+
+// -----------------------------------------------------------------
+// ADD ALIGNED POINT CLOUDS 
+// -----------------------------------------------------------------
+            vis.AddGeometry(target.points_);
+            is_target_added = true;
         }
+
         vis.UpdateGeometry();
         vis.PollEvents();
         vis.UpdateRender();
