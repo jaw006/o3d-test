@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
     // Start viewing
     bool flag_exit = false;
     bool is_geometry_added = false;
+    bool is_target_added = false;
     bool capture_source = false;
     bool capture_target = false;
     bool clear = false;
@@ -179,6 +180,28 @@ int main(int argc, char** argv) {
     //const std::string window_name = "";
     //vis.CreateVisualizerWindow(window_name);
 
+    Reco3D::RGBDToPoints source;
+    Reco3D::RGBDToPoints target;
+    open3d::geometry::PointCloud existingSource;
+    open3d::geometry::PointCloud existingTarget;
+    bool newSource = true;
+    bool newTarget = true;
+    // Read existing files
+    if (open3d::io::ReadPointCloudFromPLY("data/source.ply", existingSource, true))
+    {
+        newSource = false;
+        source.points_ = std::make_shared<PointCloud>(existingSource);
+        source.ReadPoseFromFile("data/source.txt");
+        std::cout << "Source exists, using that" << std::endl;
+    }
+    if (open3d::io::ReadPointCloudFromPLY("data/target.ply", existingTarget, true))
+    {
+        newTarget = false;
+        target.points_ = std::make_shared<PointCloud>(existingTarget);
+        target.ReadPoseFromFile("data/target.txt");
+        std::cout << "Target exists, using that" << std::endl;
+    }
+
     vis.CreateVisualizerWindow("A", 1920, 540);
     do {
         auto im_rgbd = sensor.CaptureFrame(enable_align_depth_to_color);
@@ -190,34 +213,31 @@ int main(int argc, char** argv) {
 // CAPTURE SOURCE
 // -----------------------------------------------------------------
 
-
-    Reco3D::RGBDToPoints source;
-    open3d::geometry::PointCloud existingSource;
-    open3d::geometry::PointCloud existingTarget;
-    Reco3D::RGBDToPoints target;
-    
-
-
         // Set source image/pose
         if (!is_geometry_added || capture_source) {
-            if (!open3d::io::ReadPointCloudFromPLY("data/source.ply", existingSource, false))
+            std::shared_ptr<PointCloud> pts;
+            if (newSource)
             {
-
-            }
-            auto pts = source.ConvertToPointCloud(im_rgbd);
-            source.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
-            source.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
-            source.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
-            pts->Transform(source.pose_);
+                pts = source.ConvertToPointCloud(im_rgbd);
+                source.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
+                source.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
+                source.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
                 source.ExportCapture("source");
+            }
+            else
+            {
+                pts = source.points_;
+            }
+
+//            pts->Transform(source.pose_);
 
             std::cout << "SourcePose:" << source.pose_ << std::endl;
+
             utility::LogInfo("Updating geo.");
             vis.AddGeometry(pts);
-//            source.SaveImage(im_rgbd);
             is_geometry_added = true;
             capture_source = false;
-//            source.points_->PaintUniformColor(Eigen::Vector3d(0, 1, 0));
+
             if (clear)
             {
                 vis.ClearGeometries();
@@ -238,18 +258,20 @@ int main(int argc, char** argv) {
         typedef open3d::visualization::GLHelper::GLVector3f GLVec3f;
         GLVec3f lookAt = vis.GetViewControl().GetLookat();
 
-        if (capture_target) {
-            auto pts2 = target.ConvertToPointCloud(im_rgbd);
-//            pts2->PaintUniformColor(Eigen::Vector3cf(1, 0, 0));
-            target.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
-            target.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
-            target.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
-            open3d::geometry::PointCloud existingTarget;
-
-            // Export only if file doesn't exist
-            if(!open3d::io::ReadPointCloudFromPLY("data/target.ply", existingTarget, false))
+        if (!is_target_added || capture_target) {
+            std::shared_ptr<PointCloud> pts2;
+            if (newTarget)
+            {
+                pts2 = target.ConvertToPointCloud(im_rgbd);
+                target.SetPose(vtpInterface->GetTrackerMatrix4d(selectedTrackerId));
+                target.position_ = vtpInterface->GetTrackerPosition(selectedTrackerId);
+                target.rotation_ = vtpInterface->GetTrackerRotation(selectedTrackerId);
                 target.ExportCapture("target");
-//            pts2->Rotate(rot, Eigen::Vector3d());
+            }
+            else
+            {
+                pts2 = target.points_;
+            }
 
             utility::LogInfo("Updating target.");
 
@@ -258,28 +280,14 @@ int main(int argc, char** argv) {
             auto criteria = open3d::registration::ICPConvergenceCriteria();
             // Transformation between source and target is the difference between the two matrices
             auto diff_pos = (source.position_ - target.position_);
-//            target.pose_(0, 3) = target.pose_(0,3) - diff_pos(0);
-//            target.pose_(1, 3) = target.pose_(1,3) - diff_pos(1);
-//            target.pose_(2, 3) = target.pose_(2,3) - diff_pos(2);
-//            target.pose_(3, 3) = 1.0;
             Eigen::Matrix4d diff_pose = target.pose_ - source.pose_;
-            pts2->Transform(target.pose_);
+//            pts2->Transform(target.pose_);
 
 
 
             std::cout << "Diffpose: " << diff_pose << std::endl;
-//            pts2->Translate(diff_pos);
-//            pts2->Rotate(rot, Eigen::Vector3d());
-//            pts2->Transform(diff_pose.inverse());
-
-//            source.points_->PaintUniformColor(Eigen::Vector3cf(0, 1, 0));
             criteria.max_iteration_ = 30;
-//            target.SaveImage(im_rgbd);
-            
- //           std::cout << "Target-Source:" << init << std::endl;
             auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, diff_pose);
-//            auto registration = registration::RegistrationICP(*source.points_, *pts2, 1.0, init, estimation, criteria);
-//           pts2->Transform(registration.transformation_);
 //            // Print fitness, RMSE
             double& fitness = reg_result.fitness_; 
             double& rmse = reg_result.inlier_rmse_;
@@ -288,14 +296,10 @@ int main(int argc, char** argv) {
 //            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
 //            utility::LogInfo(log1.c_str());
 //            utility::LogInfo(log2.c_str());
-
-            vis.RemoveGeometry(target.points_);
-            vis.AddGeometry(pts2);
-            lookAt = vis.GetViewControl().GetLookat();
-//            vis.GetViewControl().FitInGeometry(*pts2);
-
-//            is_geometry_added = true;
-            capture_target = false;
+//                vis.RemoveGeometry(target.points_);
+            vis.AddGeometry(target.points_);
+            is_target_added = true;
+//                capture_target = false;
         }
 //        if (capture_image)
 //        {
