@@ -46,6 +46,38 @@ void Reco3D::RGBDToPoints::SetPose(Eigen::Matrix4d& pose)
     pose_ = pose;
 }
 
+bool Reco3D::RGBDToPoints::ExportCapture(std::string filename)
+{
+    return ExportPLY(filename) && ExportPose(filename);
+    
+}
+
+bool Reco3D::RGBDToPoints::ExportPLY(std::string filename)
+{
+    const std::string extension = ".ply";
+    if (!points_)
+        return false;
+    const open3d::geometry::PointCloud& pts = *points_;
+    open3d::io::WritePointCloudToPLY(filename+extension, pts, false, false, true);
+    return true;
+}
+
+bool Reco3D::RGBDToPoints::ExportPose(std::string filename)
+{
+    const std::string extension = ".txt";
+    std::string f = filename + extension;
+    std::ofstream file(f);
+    if (file.is_open())
+    {
+        file << pose_;
+        file.close();
+        return true;
+    }
+    return false;
+}
+
+
+
 
 
 
