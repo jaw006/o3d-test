@@ -41,6 +41,8 @@
 #include "VTPLibInterface.h"
 #include "Open3D/Visualization/Utility/GLHelper.h"
 
+#define VOXEL_SIZE 10.0
+
 
 using namespace open3d;
 using namespace Reco3D;
@@ -137,9 +139,6 @@ int main(int argc, char** argv) {
     // -----------------------------------------------------------------
     // BEGIN ALGORITHM
     // -----------------------------------------------------------------
-    // Init RGBDToPoints
-
-
     // Init sensor
     io::AzureKinectSensor sensor(sensor_config);
     if (!sensor.Connect(sensor_index)) {
@@ -214,9 +213,9 @@ int main(int argc, char** argv) {
 // -----------------------------------------------------------------
 // CAPTURE SOURCE
 // -----------------------------------------------------------------
-
         // Set source image/pose
         if (!is_geometry_added || capture_source) {
+        // TODO: Refactor this to be reusable
             std::shared_ptr<PointCloud> pts;
             if (newSource)
             {
@@ -231,6 +230,7 @@ int main(int argc, char** argv) {
                 pts = source.points_;
             }
 
+            pts->VoxelDownSample(VOXEL_SIZE);
             pts->Transform(source.pose_.inverse());
 
             std::cout << "SourcePose:" << source.pose_ << std::endl;
@@ -271,11 +271,11 @@ int main(int argc, char** argv) {
             {
                 pts2 = target.points_;
             }
+            target.points_->VoxelDownSample(VOXEL_SIZE);
 
             utility::LogInfo("Updating target.");
             target.pose_ = source.pose_.inverse() * target.pose_; // Put target relative to source
-            target.points_->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-
+//            target.points_->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
 //            pts2->Transform(source.pose_.inverse()*target.pose_); // This works I'm pretty sure
 //            pts2->Transform(target.pose_.inverse()*source.pose_);   // Wrong for comparison
 
@@ -285,8 +285,8 @@ int main(int argc, char** argv) {
     // -----------------------------------------------------------------
              auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
              auto criteria = open3d::registration::ICPConvergenceCriteria();
-             double max_correspondence_distance = 1.0;
-             criteria.max_iteration_ = 300;
+             double max_correspondence_distance = 0.5;
+             criteria.max_iteration_ = 30;
 //             auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, target.pose_);
              auto reg_result = registration::RegistrationICP(
                  *source.points_,
