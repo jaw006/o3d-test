@@ -153,6 +153,8 @@ int main(int argc, char** argv) {
     bool is_target_added = false;
     bool capture_source = false;
     bool capture_target = false;
+    bool newSource = true;
+    bool newTarget = true;
     bool clear = false;
     visualization::VisualizerWithKeyCallback vis;
     vis.RegisterKeyCallback(GLFW_KEY_ESCAPE,
@@ -163,11 +165,13 @@ int main(int argc, char** argv) {
     vis.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
             capture_source = true;
+            newSource = true;
             return false;
         });
     vis.RegisterKeyCallback(GLFW_KEY_T,
         [&](visualization::Visualizer* vis) {
             capture_target = true;
+            newTarget = true;
             return false;
         });
     vis.RegisterKeyCallback(GLFW_KEY_C,
@@ -184,21 +188,19 @@ int main(int argc, char** argv) {
     Reco3D::RGBDToPoints target;
     open3d::geometry::PointCloud existingSource;
     open3d::geometry::PointCloud existingTarget;
-    bool newSource = true;
-    bool newTarget = true;
     // Read existing files
     if (open3d::io::ReadPointCloudFromPLY("data/source.ply", existingSource, true))
     {
         newSource = false;
         source.points_ = std::make_shared<PointCloud>(existingSource);
-        source.ReadPoseFromFile("data/source.txt");
+        source.ReadPoseFromFile("source");
         std::cout << "Source exists, using that" << std::endl;
     }
     if (open3d::io::ReadPointCloudFromPLY("data/target.ply", existingTarget, true))
     {
         newTarget = false;
         target.points_ = std::make_shared<PointCloud>(existingTarget);
-        target.ReadPoseFromFile("data/target.txt");
+        target.ReadPoseFromFile("target");
         std::cout << "Target exists, using that" << std::endl;
     }
 
@@ -229,12 +231,14 @@ int main(int argc, char** argv) {
                 pts = source.points_;
             }
 
-//            pts->Transform(source.pose_);
+            pts->Transform(source.pose_.inverse());
 
             std::cout << "SourcePose:" << source.pose_ << std::endl;
 
             utility::LogInfo("Updating geo.");
+
             vis.AddGeometry(pts);
+
             is_geometry_added = true;
             capture_source = false;
 
@@ -251,12 +255,7 @@ int main(int argc, char** argv) {
                 continue;
             }
         }
-    // -----------------------------------------------------------------
-    // REGISTRATION 
-    // -----------------------------------------------------------------
 
-        typedef open3d::visualization::GLHelper::GLVector3f GLVec3f;
-        GLVec3f lookAt = vis.GetViewControl().GetLookat();
 
         if (!is_target_added || capture_target) {
             std::shared_ptr<PointCloud> pts2;
@@ -275,45 +274,42 @@ int main(int argc, char** argv) {
 
             utility::LogInfo("Updating target.");
 
-            // Registration step
-            auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-            auto criteria = open3d::registration::ICPConvergenceCriteria();
-            // Transformation between source and target is the difference between the two matrices
-            auto diff_pos = (source.position_ - target.position_);
-            Eigen::Matrix4d diff_pose = target.pose_ - source.pose_;
-//            pts2->Transform(target.pose_);
-
-
-
-            std::cout << "Diffpose: " << diff_pose << std::endl;
-            criteria.max_iteration_ = 30;
-            auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, diff_pose);
-//            // Print fitness, RMSE
-            double& fitness = reg_result.fitness_; 
-            double& rmse = reg_result.inlier_rmse_;
-            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-//            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-//            utility::LogInfo(log1.c_str());
-//            utility::LogInfo(log2.c_str());
-//                vis.RemoveGeometry(target.points_);
+            pts2->Transform(target.pose_.inverse()*source.pose_);
+            pts2->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
             vis.AddGeometry(target.points_);
             is_target_added = true;
+
+    // -----------------------------------------------------------------
+    // REGISTRATION 
+    // -----------------------------------------------------------------
+
+// 
+//             // Registration step
+//             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+//             auto criteria = open3d::registration::ICPConvergenceCriteria();
+//             // Transformation between source and target is the difference between the two matrices
+//             auto diff_pos = (source.position_ - target.position_);
+//             Eigen::Matrix4d diff_pose = target.pose_ - source.pose_;
+// 
+// 
+// 
+// //            std::cout << "Diffpose: " << diff_pose << std::endl;
+// //            criteria.max_iteration_ = 30;
+// //            auto reg_result = registration::EvaluateRegistration(*source.points_, *target.points_, 1.0, diff_pose);
+// ////            // Print fitness, RMSE
+// //            double& fitness = reg_result.fitness_; 
+// //            double& rmse = reg_result.inlier_rmse_;
+// //            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+// //            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+// //            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+// //            utility::LogInfo(log1.c_str());
+// //            utility::LogInfo(log2.c_str());
+// //                vis.RemoveGeometry(target.points_);
 //                capture_target = false;
         }
-//        if (capture_image)
-//        {
-//            vis.UpdateGeometry();
-//            capture_image = false;
-//        }
-        
         vis.UpdateGeometry();
         vis.PollEvents();
         vis.UpdateRender();
-//        auto model = vis.GetViewControl().GetLookat();
-
-        // Update visualizer
-
     } while (!flag_exit);
 
 
