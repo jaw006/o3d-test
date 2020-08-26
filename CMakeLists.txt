@@ -3,6 +3,9 @@ set (CMAKE_CXX_STANDARD 14)
 
 project(TestVisualizer)
 
+set(SRC_FILES TestVisualizer.cpp RGBDToPoints.cpp VTPLibInterface.cpp)
+set(HDR_FILES RGBDToPoints.h VTPLibInterface.h)
+
 
 # Azure Kinect
 find_package(k4a CONFIG REQUIRED)
@@ -55,7 +58,7 @@ if (Open3D_FOUND)
     # link_directories must be before add_executable
     link_directories(${Open3D_LIBRARY_DIRS})
 
-    add_executable(TestVisualizer TestVisualizer.cpp RGBDToPoints.cpp RGBDToPoints.h)
+    add_executable(TestVisualizer ${SRC_FILES} ${HDR_FILES})
 
     target_link_libraries(TestVisualizer ${Open3D_LIBRARIES})
 
@@ -64,6 +67,7 @@ if (Open3D_FOUND)
     target_include_directories(TestVisualizer PUBLIC ${Open3D_INCLUDE_DIRS})
 
     target_include_directories(TestVisualizer PUBLIC ${K4A_INCLUDE_DIRS})
+
 
     # Hot fix windows dll not found issue, assumming we're using the Release build
     option(BUILD_SHARED_LIBS "Whether Open3D was build as shared library" OFF)
@@ -85,3 +89,9 @@ if (Open3D_FOUND)
 else ()
     message(SEND_ERROR "Open3D not found")
 endif ()
+
+
+    set(VTPLIB_DIR "thirdparty/ViveTrackerPosition")
+    add_subdirectory(${VTPLIB_DIR})
+    target_include_directories(TestVisualizer PUBLIC ${VTPLIB_DIR}/include)
+    target_link_libraries(TestVisualizer vtplib)
