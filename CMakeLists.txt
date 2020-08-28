@@ -5,7 +5,7 @@ project(TestVisualizer)
 
 set(SRC_FILES TestVisualizer.cpp RGBDToPoints.cpp VTPLibInterface.cpp PointCloud.cpp
               RGBD_IO.cpp)
-set(HDR_FILES RGBDToPoints.h VTPLibInterface.h PointCloud.h RGBD_IO.h)
+set(HDR_FILES RGBDToPoints.h VTPLibInterface.h PointCloud.h RGBD_IO.h Types.h)
 
 
 # Azure Kinect
