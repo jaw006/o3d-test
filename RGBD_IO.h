@@ -3,18 +3,20 @@
 #include <Open3D/Open3D.h>
 #include <k4a/k4a.h>
 #include "VTPLibInterface.h"
+#include "Types.h"
 
 namespace Reco3D
 {
-	typedef Eigen::Matrix4d ImagePose;
-	typedef open3d::geometry::RGBDImage ImageRGBD;
+//	typedef Eigen::Matrix4d ImagePose;
+//	typedef std::shared_ptr<open3d::geometry::RGBDImage> ImageRGBD;
 
 	// Struct to encapsulate pose transform and image data
-	struct RGBDCapture_t
-	{
-		ImagePose pose_;
-		ImageRGBD image_;
-	};
+//	struct RGBDCapture_t
+//	{
+//		RGBDCapture_t() {};
+//		ImagePose pose_;
+//		ImageRGBD image_;
+//	};
 
 	namespace IO
 	{
@@ -61,7 +63,6 @@ namespace Reco3D
 			std::unique_ptr<open3d::io::AzureKinectSensor> sensor_;
 			std::unique_ptr<VTPLibInterface> vtpInterface_;
 			TrackerId currentTrackerIndex_;
-
 			bool InitializeAzureKinect();
 			bool InitializeVTPLib();
 		};

@@ -18,7 +18,22 @@ Reco3D::IO::RGBDSensor_KinectVive::~RGBDSensor_KinectVive()
 
 std::shared_ptr<Reco3D::RGBDCapture_t> Reco3D::IO::RGBDSensor_KinectVive::CaptureFrame()
 {
-    return std::shared_ptr<RGBDCapture_t>();
+    std::shared_ptr<Reco3D::RGBDCapture_t> capture(new Reco3D::RGBDCapture_t());
+    // Get Kinect image
+    if (sensor_)
+    {
+        auto im_rgbd = sensor_->CaptureFrame(config_.enableAlignDepthWithColor_);
+        if (im_rgbd != nullptr)
+        {
+            capture->image_ = im_rgbd;
+        }
+    }
+    // Get tracker matrix 
+    if (vtpInterface_)
+    {
+        capture->pose_ = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
+    }
+    return capture;
 }
 
 bool Reco3D::IO::RGBDSensor_KinectVive::InitializeAzureKinect()
