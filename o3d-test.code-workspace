@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"telemetry.enableTelemetry": false,
+		"C_Cpp.default.includePath": ["${workspaceRoot}",
+									  "./**",
+									"C:/Program Files (x86)/Open3D/include"
+								],
+								"files.associations": {
+									"fstream": "cpp"
+								}
+	}
+}
