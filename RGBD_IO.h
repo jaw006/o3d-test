@@ -24,8 +24,9 @@ namespace Reco3D
 		class RGBDSensor_Config {};
 
 		// Configuration class for Kinect/Vive trackers
-		struct RGBDSensor_Config_KinectVive
+		class RGBDSensor_Config_KinectVive : public RGBDSensor_Config
 		{
+		public:
 			RGBDSensor_Config_KinectVive() :
 				enableAlignDepthWithColor_(true),
 				sensorIndex_(0),

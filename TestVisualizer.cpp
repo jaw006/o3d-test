@@ -40,6 +40,7 @@
 #include "RGBDToPoints.h"
 #include "VTPLibInterface.h"
 #include "Open3D/Visualization/Utility/GLHelper.h"
+#include "Program.h"
 
 #define VOXEL_SIZE 10.0
 
@@ -148,41 +149,42 @@ int main(int argc, char** argv) {
 //    }
 //
 //    // Start viewing
-//    bool flag_exit = false;
-//    bool is_geometry_added = false;
-//    bool is_target_added = false;
-//    bool capture_source = false;
-//    bool capture_target = false;
-//    bool newSource = true;
-//    bool newTarget = true;
-//    bool clear = false;
-//    visualization::VisualizerWithKeyCallback vis;
-//    vis.RegisterKeyCallback(GLFW_KEY_ESCAPE,
-//        [&](visualization::Visualizer* vis) {
-//            flag_exit = true;
-//            return false;
-//        });
-//    vis.RegisterKeyCallback(GLFW_KEY_A,
-//        [&](visualization::Visualizer* vis) {
-//            capture_source = true;
-//            newSource = true;
-//            return false;
-//        });
-//    vis.RegisterKeyCallback(GLFW_KEY_T,
-//        [&](visualization::Visualizer* vis) {
-//            capture_target = true;
-//            newTarget = true;
-//            return false;
-//        });
-//    vis.RegisterKeyCallback(GLFW_KEY_C,
-//        [&](visualization::Visualizer* vis) {
-//            clear = true;
-//            return false;
-//        });
-//
-//    // Restore view
-//    //const std::string window_name = "";
-//    //vis.CreateVisualizerWindow(window_name);
+    bool flag_exit = false;
+    bool is_geometry_added = false;
+    bool is_target_added = false;
+    bool capture_source = false;
+    bool capture_target = false;
+    bool newSource = true;
+    bool newTarget = true;
+    bool clear = false;
+    visualization::VisualizerWithKeyCallback vis;
+    vis.RegisterKeyCallback(GLFW_KEY_ESCAPE,
+        [&](visualization::Visualizer* vis) {
+            flag_exit = true;
+            return false;
+        });
+    vis.RegisterKeyCallback(GLFW_KEY_A,
+        [&](visualization::Visualizer* vis) {
+            capture_source = true;
+            newSource = true;
+            return false;
+        });
+    vis.RegisterKeyCallback(GLFW_KEY_T,
+        [&](visualization::Visualizer* vis) {
+            capture_target = true;
+            newTarget = true;
+            return false;
+        });
+    vis.RegisterKeyCallback(GLFW_KEY_C,
+        [&](visualization::Visualizer* vis) {
+            clear = true;
+            return false;
+        });
+
+    // Restore view
+    //const std::string window_name = "";
+    //vis.CreateVisualizerWindow(window_name);
+
 //
 //    Reco3D::RGBDToPoints source;
 //    Reco3D::RGBDToPoints target;
@@ -204,13 +206,15 @@ int main(int argc, char** argv) {
 //        std::cout << "Target exists, using that" << std::endl;
 //    }
 //
-//    vis.CreateVisualizerWindow("A", 1920, 540);
+    vis.CreateVisualizerWindow("A", 1920, 540);
 //    do {
 //        auto im_rgbd = sensor.CaptureFrame(enable_align_depth_to_color);
 //        if (im_rgbd == nullptr) {
 //            utility::LogInfo("Invalid capture, skipping this frame");
 //            continue;
 //        }
+    auto program_ = Reco3D::Program(&vis);
+    program_.Run();
 //// -----------------------------------------------------------------
 //// CAPTURE SOURCE
 //// -----------------------------------------------------------------
