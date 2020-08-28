@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Open3D/Open3D.h>
+//#include <PointCloud.h>
 #include <iostream>
 #include <fstream>
 
@@ -12,10 +13,11 @@ using namespace open3d::geometry;
 
 namespace Reco3D
 {
-
+    // Container class for a point cloud, image, and pose
     class RGBDToPoints
     {
     public:
+//        std::shared_ptr<Reco3D::PointCloud> pointCloud_;
         std::shared_ptr<PointCloud> points_;
         std::shared_ptr<RGBDImage> image_;
         Eigen::Matrix4d pose_;
