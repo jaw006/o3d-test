@@ -33,11 +33,12 @@ namespace Reco3D
 
         std::shared_ptr<PointCloud> ToPointCloud(std::shared_ptr<RGBDCapture_t> capture);
 
-        void SetPose(Eigen::Matrix4d& pose);
         bool ExportCapture(std::string filename, std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<Reco3D::RGBDCapture_t> capture);
         bool ExportPLY(std::string filename, std::shared_ptr<Reco3D::o3d_PointCloud> points);
         bool ExportPose(std::string filename, std::shared_ptr<Reco3D::RGBDCapture_t> capture);
         Reco3D::ImagePose ReadPoseFromFile(std::string filename);
+
+//        void SetPose(Eigen::Matrix4d& pose);
 //        bool ExportPLY(std::string filename);
 //        std::shared_ptr<PointCloud> ConvertToPointCloud(std::shared_ptr<RGBDImage>& image);
 //        std::shared_ptr<open3d::geometry::RGBDImage> SaveImage(std::shared_ptr<RGBDImage>& image);
