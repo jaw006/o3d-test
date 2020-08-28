@@ -22,10 +22,20 @@ namespace Reco3D
 		class RGBDSensor_Config {};
 
 		// Configuration class for Kinect/Vive trackers
-		class RGBDSensor_Config_KinectVive : public RGBDSensor_Config
+		struct RGBDSensor_Config_KinectVive
 		{
-		public:
-			open3d::io::AzureKinectSensorConfig kinectConfig_;
+			RGBDSensor_Config_KinectVive() :
+				enableAlignDepthWithColor_(true),
+				sensorIndex_(0),
+				trackerIndex_(0)
+			{}
+
+			// Kinect
+			const open3d::io::AzureKinectSensorConfig kinectConfig_;
+			int sensorIndex_; // Kinect sensor index
+			bool enableAlignDepthWithColor_;
+			// Vive Tracker
+			TrackerId trackerIndex_; // Default device index
 		};
 
 		// Virtual class for handling the hardware
@@ -41,6 +51,7 @@ namespace Reco3D
 		// positional data from Vive Trackers
 		class RGBDSensor_KinectVive : public RGBDSensor
 		{
+			
 		public:
 			RGBDSensor_KinectVive(RGBDSensor_Config_KinectVive config);
 			~RGBDSensor_KinectVive();
@@ -48,7 +59,9 @@ namespace Reco3D
 		protected:
 			RGBDSensor_Config_KinectVive config_;
 			std::unique_ptr<open3d::io::AzureKinectSensor> sensor_;
-			std::unique_ptr<VTPLibInterface> vtplib_;
+			std::unique_ptr<VTPLibInterface> vtpInterface_;
+			TrackerId currentTrackerIndex_;
+
 			bool InitializeAzureKinect();
 			bool InitializeVTPLib();
 		};
