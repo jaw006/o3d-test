@@ -3,8 +3,8 @@ set (CMAKE_CXX_STANDARD 14)
 
 project(TestVisualizer)
 
-set(SRC_FILES TestVisualizer.cpp RGBDToPoints.cpp VTPLibInterface.cpp)
-set(HDR_FILES RGBDToPoints.h VTPLibInterface.h)
+set(SRC_FILES TestVisualizer.cpp RGBDToPoints.cpp VTPLibInterface.cpp PointCloud.cpp)
+set(HDR_FILES RGBDToPoints.h VTPLibInterface.h PointCloud.h)
 
 
 # Azure Kinect
