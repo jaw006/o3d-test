@@ -27,7 +27,7 @@ bool Reco3D::LoadPlyPoseToPointCloud(std::string& sourcePath,  const std::string
 {
     Reco3D::RGBDToPoints converter;
     std::shared_ptr<Reco3D::o3d_PointCloud> ply_points(new Reco3D::o3d_PointCloud());
-    std::string filepath = sourcePath + "/" + sourceFilename;
+    std::string filepath = sourcePath + sourceFilename;
     if (open3d::io::ReadPointCloudFromPLY(filepath + ".ply", *ply_points, true))
     {
         pointsObject.SetPoints(ply_points);
