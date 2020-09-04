@@ -49,6 +49,7 @@ void Reco3D::Program::Run()
     bool newSource = true;
     bool newTarget = true;
     bool clear = false;
+    bool update_render = false;
 
     // Input key callbacks
     vis_.RegisterKeyCallback(GLFW_KEY_ESCAPE,
@@ -91,6 +92,7 @@ void Reco3D::Program::Run()
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
     do {
+        // Doing this every frame is very taxing on CPU
         auto im_rgbd = sensor_->CaptureFrame();
         if (im_rgbd == nullptr) {
             utility::LogInfo("Invalid capture, skipping this frame");
@@ -105,6 +107,7 @@ void Reco3D::Program::Run()
             AddSourcePointCloud(source, vis_);
             is_geometry_added = true;
             capture_source = false;
+            update_render = true;
 //            if (clear)
 //            {
 //                vis.ClearGeometries();
@@ -153,13 +156,19 @@ void Reco3D::Program::Run()
             // ADD ALIGNED POINT CLOUDS 
             // -----------------------------------------------------------------
             vis_.AddGeometry(target.GetPoints());
+            update_render = true;
             is_target_added = true;
         } // End target
 
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
-        vis_.UpdateGeometry();
+        if (update_render)
+        {
+            vis_.UpdateGeometry();
+            update_render = false;
+        }
+
         vis_.PollEvents();
         vis_.UpdateRender();
     } while (!flag_exit);

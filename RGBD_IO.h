@@ -7,17 +7,6 @@
 
 namespace Reco3D
 {
-//	typedef Eigen::Matrix4d ImagePose;
-//	typedef std::shared_ptr<open3d::geometry::RGBDImage> ImageRGBD;
-
-	// Struct to encapsulate pose transform and image data
-//	struct RGBDCapture_t
-//	{
-//		RGBDCapture_t() {};
-//		ImagePose pose_;
-//		ImageRGBD image_;
-//	};
-
 	namespace IO
 	{
 		// Configuration class for RGBDSensor class
