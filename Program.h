@@ -30,16 +30,18 @@ namespace Reco3D
         Reco3D::RGBDToPoints*                     converter_;
         open3d::visualization::VisualizerWithKeyCallback& vis_;
 
-//        void LoadPlyToPointCloud(std::string& sourcePath, Reco3D::o3d_PointCloud& existingSource, Reco3D::PointCloud& source, const std::string& sourceFilename);
-
     public:
         Program(open3d::visualization::VisualizerWithKeyCallback& vis);
         ~Program();
         void Run();
+
+        // Helper methods
+        // This should probably go in a class that manages the point cloud scene
         void AddSourcePointCloud(Reco3D::PointCloud& source, open3d::visualization::VisualizerWithKeyCallback& vis);
+
     };
 
-
+    // TODO: Make class member
     bool LoadPlyPoseToPointCloud(std::string& sourcePath, const std::string& sourceFilename, Reco3D::PointCloud& pointsObject);
 
 }

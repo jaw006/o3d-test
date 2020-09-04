@@ -18,25 +18,9 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
 
     const PinholeCameraIntrinsic intrinsic(1280, 720, 601.1693115234375, 600.85931396484375, 637.83624267578125, 363.8018798828125);
     auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*capture->image_, intrinsic);
-//    std::shared_ptr<open3d::geometry::RGBDImage> points =
-//        std::make_shared<open3d::geometry::RGBDImage>();
     std::shared_ptr<Reco3D::PointCloud> cloud = std::make_shared<Reco3D::PointCloud>(img, capture);
     return cloud;
 }
-
-//std::shared_ptr<open3d::geometry::PointCloud> Reco3D::RGBDToPoints::ConvertToPointCloud(std::shared_ptr<open3d::geometry::RGBDImage>& image)
-//{
-//    if (image == nullptr)
-//    {
-//        return points_;
-//    }
-//    auto rgbd_image = MakeNewRGBDImage(image);
-//    // I have no idea where these numbers come from
-//    PinholeCameraIntrinsic intrinsic(1280, 720, 601.1693115234375, 600.85931396484375, 637.83624267578125, 363.8018798828125);
-//    points_ = open3d::geometry::PointCloud::CreateFromRGBDImage(*rgbd_image, intrinsic);
-//    return points_;
-//}
-
 std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::MakeNewRGBDImage(std::shared_ptr<open3d::geometry::RGBDImage>& image)
 {
     auto& color = image->color_;
@@ -48,11 +32,6 @@ std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::MakeNewRGBDIm
 //{
 ////    image_ = Reco3D::MakeNewRGBDImage(image);
 ////    return image_;
-//}
-
-//void Reco3D::RGBDToPoints::SetPose(Eigen::Matrix4d& pose)
-//{
-//    pose_ = pose;
 //}
 
 bool Reco3D::RGBDToPoints::ExportCapture(std::string filename, 
@@ -86,13 +65,10 @@ bool Reco3D::RGBDToPoints::ExportPose(std::string filename, std::shared_ptr<Reco
     return false;
 }
 
-// Expects path with ".txt" file extension at end
+// Expects valid filepath with ".txt" file extension at end
 Reco3D::ImagePose Reco3D::RGBDToPoints::ReadPoseFromFile(std::string filename)
 {
     ImagePose pose;
-//    const std::string extension = ".txt";
-//    std::string f = DATA_DIR + filename + extension;
-//    std::string f = filename + extension;
     std::string f = filename;
     std::ifstream file(f);
     if (file.is_open())
