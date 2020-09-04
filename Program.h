@@ -17,7 +17,7 @@
 #include "VTPLibInterface.h"
 #include "Open3D/Visualization/Utility/GLHelper.h"
 #include "Types.h"
-#include "Program.h"
+#include "PointsToMesh.h"
 
 
 namespace Reco3D

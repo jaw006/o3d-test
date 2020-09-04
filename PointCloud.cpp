@@ -8,7 +8,7 @@ Reco3D::PointCloud::PointCloud(std::shared_ptr<Reco3D::o3d_PointCloud> points,
 
 }
 Reco3D::PointCloud::PointCloud()
-    :   points_(nullptr),
+    :   points_(std::make_shared<Reco3D::o3d_PointCloud>()),
         capture_(std::make_shared<Reco3D::RGBDCapture_t>())
 {
 

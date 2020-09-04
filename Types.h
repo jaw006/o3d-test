@@ -15,5 +15,6 @@ namespace Reco3D
 		ImageRGBD image_;
 	};
 
-	typedef open3d::geometry::PointCloud o3d_PointCloud;
+    typedef open3d::geometry::PointCloud   o3d_PointCloud;
+	typedef open3d::geometry::TriangleMesh o3d_TriMesh;
 }

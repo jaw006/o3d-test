@@ -105,9 +105,11 @@ void Reco3D::Program::Run()
         // Set source image/pose
         if (!is_geometry_added || capture_source) {
             AddSourcePointCloud(source, vis_);
+
+            // Flag for update
             is_geometry_added = true;
-            capture_source = false;
             update_render = true;
+            capture_source = false;
 //            if (clear)
 //            {
 //                vis.ClearGeometries();
@@ -130,35 +132,51 @@ void Reco3D::Program::Run()
             // -----------------------------------------------------------------
             // REGISTRATION  (TODO: Refactor registration)
             // -----------------------------------------------------------------
-             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-             auto criteria = open3d::registration::ICPConvergenceCriteria();
-             double max_correspondence_distance = 0.5;
-             criteria.max_iteration_ = 30;
-             auto reg_result = registration::RegistrationICP(
-                 *source.GetPoints(),
-                 *target.GetPoints(),
-                 max_correspondence_distance,
-                 target.GetPose(),
-                 estimation,
-                 criteria
-             );
-            // Print fitness, RMSE
-            double& fitness = reg_result.fitness_; 
-            double& rmse = reg_result.inlier_rmse_;
-            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-            utility::LogInfo(log1.c_str());
-            utility::LogInfo(log2.c_str());
-            target.GetPoints()->Transform(reg_result.transformation_);
-            capture_target = false;
+
+//             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+//             auto criteria = open3d::registration::ICPConvergenceCriteria();
+//             double max_correspondence_distance = 0.5;
+//             criteria.max_iteration_ = 30;
+//             auto reg_result = registration::RegistrationICP(
+//                 *source.GetPoints(),
+//                 *target.GetPoints(),
+//                 max_correspondence_distance,
+//                 target.GetPose(),
+//                 estimation,
+//                 criteria
+//             );
+//            // Print fitness, RMSE
+//            double& fitness = reg_result.fitness_; 
+//            double& rmse = reg_result.inlier_rmse_;
+//            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+//            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+//            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+//            utility::LogInfo(log1.c_str());
+//            utility::LogInfo(log2.c_str());
+//            target.GetPoints()->Transform(reg_result.transformation_);
+
             // -----------------------------------------------------------------
             // ADD ALIGNED POINT CLOUDS 
             // -----------------------------------------------------------------
-            vis_.AddGeometry(target.GetPoints());
+//            vis_.AddGeometry(target.GetPoints());
+
+
+            PointsToMesh ptsToMesh_;
+            PointsVector ptsVector_;
+            ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(source));
+            ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(target));
+            auto mesh = ptsToMesh_.ToMesh(std::make_shared<Reco3D::PointsVector>(ptsVector_));
+            vis_.AddGeometry(mesh);
+
+            // Flag for update
+            capture_target = false;
             update_render = true;
             is_target_added = true;
         } // End target
+
+
+
+
 
 // -----------------------------------------------------------------
 // RENDER
@@ -187,5 +205,5 @@ void Reco3D::Program::AddSourcePointCloud(Reco3D::PointCloud& source, open3d::vi
 
     utility::LogInfo("Updating geo.");
 
-    vis.AddGeometry(source.GetPoints());
+//    vis.AddGeometry(source.GetPoints());
 }
