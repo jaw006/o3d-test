@@ -93,11 +93,11 @@ void Reco3D::Program::Run()
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
     do {
         // Doing this every frame is very taxing on CPU
-        auto im_rgbd = sensor_->CaptureFrame();
-        if (im_rgbd == nullptr) {
-            utility::LogInfo("Invalid capture, skipping this frame");
-            continue;
-        }
+//        auto im_rgbd = sensor_->CaptureFrame();
+//        if (im_rgbd == nullptr) {
+//            utility::LogInfo("Invalid capture, skipping this frame");
+//            continue;
+//        }
 
 // -----------------------------------------------------------------
 // CAPTURE SOURCE
