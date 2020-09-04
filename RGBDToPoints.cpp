@@ -86,11 +86,14 @@ bool Reco3D::RGBDToPoints::ExportPose(std::string filename, std::shared_ptr<Reco
     return false;
 }
 
+// Expects path with ".txt" file extension at end
 Reco3D::ImagePose Reco3D::RGBDToPoints::ReadPoseFromFile(std::string filename)
 {
     ImagePose pose;
-    const std::string extension = ".txt";
-    std::string f = DATA_DIR + filename + extension;
+//    const std::string extension = ".txt";
+//    std::string f = DATA_DIR + filename + extension;
+//    std::string f = filename + extension;
+    std::string f = filename;
     std::ifstream file(f);
     if (file.is_open())
     {

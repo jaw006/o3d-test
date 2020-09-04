@@ -64,6 +64,7 @@ namespace Reco3D
 			std::unique_ptr<open3d::io::AzureKinectSensor> sensor_;
 			std::unique_ptr<VTPLibInterface> vtpInterface_;
 			TrackerId currentTrackerIndex_;
+
 			bool InitializeAzureKinect();
 			bool InitializeVTPLib();
 		};
