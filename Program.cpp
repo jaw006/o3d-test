@@ -75,6 +75,9 @@ void Reco3D::Program::Run()
             return false;
         });
 
+    // Show backfaces
+    vis_.GetRenderOption().ToggleMeshShowBackFace();
+
     const std::string sourceFilename = "source";
     const std::string targetFilename = "target";
     const std::string folder = "data";
