@@ -7,7 +7,8 @@ Reco3D::Program::Program(open3d::visualization::VisualizerWithKeyCallback& vis) 
     converter_(new Reco3D::RGBDToPoints()),
     vis_(vis)
 {
-    sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
+    // TODO: Implement live capture again
+    // sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
 }
 
 Reco3D::Program::~Program()
@@ -74,9 +75,15 @@ void Reco3D::Program::Run()
             clear = true;
             return false;
         });
+    vis_.RegisterKeyCallback(GLFW_KEY_W,
+        [&](visualization::Visualizer* vis) {
+            vis->GetRenderOption().ToggleMeshShowWireframe();
+            return false;
+        });
 
     // Show backfaces
     vis_.GetRenderOption().ToggleMeshShowBackFace();
+    vis_.GetRenderOption().ToggleMeshShowWireframe();
 
     const std::string sourceFilename = "source";
     const std::string targetFilename = "target";
@@ -136,27 +143,27 @@ void Reco3D::Program::Run()
             // REGISTRATION  (TODO: Refactor registration)
             // -----------------------------------------------------------------
 
-//             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-//             auto criteria = open3d::registration::ICPConvergenceCriteria();
-//             double max_correspondence_distance = 0.5;
-//             criteria.max_iteration_ = 30;
-//             auto reg_result = registration::RegistrationICP(
-//                 *source.GetPoints(),
-//                 *target.GetPoints(),
-//                 max_correspondence_distance,
-//                 target.GetPose(),
-//                 estimation,
-//                 criteria
-//             );
-//            // Print fitness, RMSE
-//            double& fitness = reg_result.fitness_; 
-//            double& rmse = reg_result.inlier_rmse_;
-//            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-//            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-//            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-//            utility::LogInfo(log1.c_str());
-//            utility::LogInfo(log2.c_str());
-//            target.GetPoints()->Transform(reg_result.transformation_);
+             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+             auto criteria = open3d::registration::ICPConvergenceCriteria();
+             double max_correspondence_distance = 0.5;
+             criteria.max_iteration_ = 30;
+             auto reg_result = registration::RegistrationICP(
+                 *source.GetPoints(),
+                 *target.GetPoints(),
+                 max_correspondence_distance,
+                 target.GetPose(),
+                 estimation,
+                 criteria
+             );
+            // Print fitness, RMSE
+            double& fitness = reg_result.fitness_; 
+            double& rmse = reg_result.inlier_rmse_;
+            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+            utility::LogInfo(log1.c_str());
+            utility::LogInfo(log2.c_str());
+            target.GetPoints()->Transform(reg_result.transformation_);
 
             // -----------------------------------------------------------------
             // ADD ALIGNED POINT CLOUDS 
@@ -164,6 +171,9 @@ void Reco3D::Program::Run()
 //            vis_.AddGeometry(target.GetPoints());
 
 
+            // -----------------------------------------------------------------
+            // MESH THE COMBINED POINTS
+            // -----------------------------------------------------------------
             PointsToMesh ptsToMesh_;
             PointsVector ptsVector_;
             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(source));

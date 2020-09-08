@@ -25,18 +25,17 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     }
 
 
-    cloud.VoxelDownSample(100.0);
+    cloud.UniformDownSample(100.0);
+//    cloud.VoxelDownSample(10.0);
+
 //    // Mesh with default parameters - Poisson reconstruction
     uint64_t depth = 12;
    std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
        open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
+
    std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
 
-//    std::vector<double> radii{ 0.5, 1.0, 2.0, 4.0 };
-//  std::vector<double> radii{ 5.0 };
-//  auto mesh_result =
-//      open3d::geometry::TriangleMesh::CreateFromPointCloudBallPivoting(cloud, radii);
-//  std::shared_ptr<o3d_TriMesh> output = mesh_result;
+   output->FilterSmoothSimple(2);
 
     return output;
 }

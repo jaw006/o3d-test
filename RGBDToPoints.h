@@ -28,13 +28,13 @@ namespace Reco3D
         bool ExportCapture(std::string filename, std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<Reco3D::RGBDCapture_t> capture);
         bool ExportPLY(std::string filename, std::shared_ptr<Reco3D::o3d_PointCloud> points);
         bool ExportPose(std::string filename, std::shared_ptr<Reco3D::RGBDCapture_t> capture);
-        bool ExportRGBDImage(std::string filename, std::shared_ptr<Reco3D::RGBDCapture_t> capture);
+//        bool ExportRGBDImage(std::string filename, std::shared_ptr<Reco3D::RGBDCapture_t> capture);
         Reco3D::ImagePose ReadPoseFromFile(std::string filename);
 
     private:
         std::shared_ptr<open3d::geometry::RGBDImage> MakeNewRGBDImage(std::shared_ptr<open3d::geometry::RGBDImage>& image);
-        bool OpenFile(std::ofstream& stream, std::string& filepath);
-        bool CloseFile(std::ofstream& stream);
+//        bool OpenFile(std::ofstream& stream, std::string& filepath);
+//        bool CloseFile(std::ofstream& stream);
 
 
     };
