@@ -1,5 +1,31 @@
 #include "RGBDCaptureSet.h"
 
+open3d::registration::RegistrationResult RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, std::shared_ptr<Reco3D::PointCloud> target)
+{
+
+         auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+         auto criteria = open3d::registration::ICPConvergenceCriteria();
+         double max_correspondence_distance = 0.5;
+         criteria.max_iteration_ = 30;
+         auto reg_result = open3d::registration::RegistrationICP(
+             *source->GetPoints(),
+             *target->GetPoints(),
+             max_correspondence_distance,
+             target->GetPose(),
+             estimation,
+             criteria
+         );
+        // Print fitness, RMSE
+        double& fitness = reg_result.fitness_; 
+        double& rmse = reg_result.inlier_rmse_;
+        std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+        std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+        std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+        open3d::utility::LogInfo(log1.c_str());
+        open3d::utility::LogInfo(log2.c_str());
+        return reg_result;
+}
+
 std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDCaptureSet::GetSourcePointCloud()
 {
     if (Count() == 0)
