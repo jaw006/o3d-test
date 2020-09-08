@@ -12,8 +12,8 @@ namespace Reco3D
     class RGBDCaptureSet
     {
     private:
-        std::vector<PointCloud>    points_;
         std::vector<RGBDCapture_t> captures_;
+        std::vector<PointCloud>    points_;
 
         std::shared_ptr<RGBDToPoints>   rgbdToPoints_;
         std::shared_ptr<PointsToMesh>   pointsToMesh_;
