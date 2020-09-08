@@ -2,7 +2,14 @@
 
 std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDCaptureSet::GetSourcePointCloud()
 {
-    return std::shared_ptr<PointCloud>();
+    if (Count() == 0)
+    {
+        return nullptr;
+    }
+    else
+    {
+        return points_.at(0);
+    }
 }
 
 Reco3D::RGBDCaptureSet::RGBDCaptureSet() :
@@ -42,7 +49,16 @@ void Reco3D::RGBDCaptureSet::AddCapture(std::shared_ptr<RGBDCapture_t> capture)
 
     // Insert capture and points
     pointsVector_->AddPoints(newPoints);
-    captures_.push_back(*capture);
+    captures_.push_back(capture);
+}
+
+// Remove all clouds
+void Reco3D::RGBDCaptureSet::Clear()
+{
+    pointsVector_.reset(new PointsVector());
+
+    // This might be memory unsafe
+    captures_.clear();
 }
 
 size_t Reco3D::RGBDCaptureSet::Count()

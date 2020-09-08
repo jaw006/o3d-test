@@ -12,7 +12,7 @@ namespace Reco3D
     class RGBDCaptureSet
     {
     private:
-        std::vector<RGBDCapture_t> captures_;
+        std::vector<std::shared_ptr<RGBDCapture_t>> captures_;
         std::vector<std::shared_ptr<PointCloud>>    points_;
 
         std::shared_ptr<RGBDToPoints>   rgbdToPoints_;
@@ -29,6 +29,7 @@ namespace Reco3D
         RGBDCaptureSet();
         ~RGBDCaptureSet();
         void AddCapture(std::shared_ptr<RGBDCapture_t> capture);
+        void Clear();
         size_t Count();
         std::shared_ptr<PointCloud> GetCombinedPointCloud();
         std::shared_ptr<o3d_TriMesh> GetCombinedTriangleMesh();
