@@ -23,6 +23,8 @@ namespace Reco3D
 
         std::shared_ptr<PointsVector>   pointsVector_;
 
+        std::shared_ptr<PointCloud> GetSourcePointCloud();
+
     public:
         RGBDCaptureSet();
         ~RGBDCaptureSet();
