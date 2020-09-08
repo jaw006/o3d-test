@@ -28,11 +28,19 @@ std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::MakeNewRGBDIm
     return open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, 1000.0, 10000.0, false);
 }
 
-//std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::SaveImage(Reco3D::ImageRGBD& image)
-//{
-////    image_ = Reco3D::MakeNewRGBDImage(image);
-////    return image_;
-//}
+bool Reco3D::RGBDToPoints::OpenFile(std::ofstream& stream, std::string& filepath)
+{
+    stream = std::ofstream(filepath);
+    return stream.is_open();
+}
+
+bool Reco3D::RGBDToPoints::CloseFile(std::ofstream& stream)
+{
+    if (!stream.is_open())
+        return false;
+    stream.close();
+    return true;
+}
 
 bool Reco3D::RGBDToPoints::ExportCapture(std::string filename, 
     std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<Reco3D::RGBDCapture_t> capture)
@@ -59,6 +67,24 @@ bool Reco3D::RGBDToPoints::ExportPose(std::string filename, std::shared_ptr<Reco
     if (file.is_open())
     {
         file << pose;
+        file.close();
+        return true;
+    }
+    return false;
+}
+
+bool Reco3D::RGBDToPoints::ExportRGBDImage(std::string filename, std::shared_ptr<Reco3D::RGBDCapture_t> capture)
+{
+    const std::string color_extension = ".color";
+    const std::string depth_extension = ".depth";
+    std::string f = DATA_DIR + filename + color_extension;
+    auto image = capture->image_;
+    auto& color = image->color_;
+    auto& depth = image->depth_;
+    std::ofstream file(f);
+    if (file.is_open())
+    {
+        file << image;
         file.close();
         return true;
     }
