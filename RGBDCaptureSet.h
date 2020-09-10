@@ -29,6 +29,7 @@ namespace Reco3D
         RGBDCaptureSet();
         ~RGBDCaptureSet();
         void AddCapture(std::shared_ptr<RGBDCapture_t> capture);
+//        void AddCloud(std::shared_ptr<PointCloud> cloud); // TODO: For loading in saved clouds
         void Clear();
         size_t Count();
         std::shared_ptr<PointCloud> GetCombinedPointCloud();
