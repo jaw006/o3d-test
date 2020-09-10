@@ -8,8 +8,7 @@ Reco3D::Program::Program(open3d::visualization::VisualizerWithKeyCallback& vis) 
     captureSet_(new Reco3D::RGBDCaptureSet()),
     vis_(vis)
 {
-    // TODO: Implement live capture again
-    // sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
+    sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
 }
 
 Reco3D::Program::~Program()
@@ -47,11 +46,7 @@ void Reco3D::Program::Run()
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool is_target_added = false;
-    bool capture_source = false;
-    bool capture_target = false;
-    bool newSource = true;
-    bool newTarget = true;
+    bool capture_frame = false;
     bool clear = false;
     bool update_render = false;
 
@@ -63,14 +58,8 @@ void Reco3D::Program::Run()
         });
     vis_.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
-            capture_source = true;
-            newSource = true;
-            return false;
-        });
-    vis_.RegisterKeyCallback(GLFW_KEY_T,
-        [&](visualization::Visualizer* vis) {
-            capture_target = true;
-            newTarget = true;
+            capture_frame = true;
+//            newSource = true;
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_C,
@@ -97,11 +86,11 @@ void Reco3D::Program::Run()
     std::string sourcePath = folder + delim + sourceFilename + extension;
     std::string targetPath = folder + delim + targetFilename + extension;
 
-    // Read existing files
-    Reco3D::PointCloud source;
-    Reco3D::PointCloud target;
-    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
-    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
+//    // Read existing files
+//    Reco3D::PointCloud source;
+//    Reco3D::PointCloud target;
+//    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
+//    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
     do {
@@ -193,20 +182,37 @@ void Reco3D::Program::Run()
 // -----------------------------------------------------------------
 // New simpler main loop 
 // -----------------------------------------------------------------
-
-
-
-
-
+        if (capture_frame)
+        {
+            capture_frame = false;
+            std::cout << "Capturing frame!" << std::endl;
+            auto im_rgbd = sensor_->CaptureFrame();
+            if (im_rgbd != nullptr) {
+                update_render = true;
+                captureSet_->AddCapture(im_rgbd);
+                // Add geometry pointer if not done before
+//                if (!is_geometry_added)
+//                {
+                vis_.ClearGeometries();
+                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+                    is_geometry_added = true;
+//                }
+                std::cout << "Done!" << std::endl;
+            }
+            else
+            {
+                utility::LogInfo("Invalid capture, skipping this frame");
+            }
+        }
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
         if (update_render)
         {
+            std::cout << "Updating geometry!" << std::endl;
             vis_.UpdateGeometry();
             update_render = false;
         }
-
         vis_.PollEvents();
         vis_.UpdateRender();
     } while (!flag_exit);

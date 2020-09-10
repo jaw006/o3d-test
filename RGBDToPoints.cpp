@@ -17,7 +17,8 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
     }
 
     const PinholeCameraIntrinsic intrinsic(1280, 720, 601.1693115234375, 600.85931396484375, 637.83624267578125, 363.8018798828125);
-    auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*capture->image_, intrinsic);
+    auto new_img = MakeNewRGBDImage(capture->image_);
+    auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic);
     std::shared_ptr<Reco3D::PointCloud> cloud = std::make_shared<Reco3D::PointCloud>(img, capture);
     return cloud;
 }
