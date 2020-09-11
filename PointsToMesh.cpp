@@ -86,7 +86,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //        // Source transformation
         sourcePose = points->GetPose();
         sourcePoseInverse = points->GetPose().inverse();
-        points->GetPoints()->Transform(sourcePoseInverse);
+//        points->GetPoints()->Transform();
 //        points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
     }
     else
