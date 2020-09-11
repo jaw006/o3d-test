@@ -5,10 +5,10 @@ using namespace open3d;
 Reco3D::Program::Program(open3d::visualization::VisualizerWithKeyCallback& vis) :
     sensorConfig_(new Reco3D::IO::RGBDSensor_Config_KinectVive()),
     converter_(new Reco3D::RGBDToPoints()),
+    captureSet_(new Reco3D::RGBDCaptureSet()),
     vis_(vis)
 {
-    // TODO: Implement live capture again
-    // sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
+    sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
 }
 
 Reco3D::Program::~Program()
@@ -19,6 +19,8 @@ Reco3D::Program::~Program()
     sensor_ = nullptr;
     delete converter_;
     converter_ = nullptr;
+    delete captureSet_;
+    captureSet_ = nullptr;
 }
 
 // sourcePath: path to file, without filename
@@ -44,11 +46,7 @@ void Reco3D::Program::Run()
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool is_target_added = false;
-    bool capture_source = false;
-    bool capture_target = false;
-    bool newSource = true;
-    bool newTarget = true;
+    bool capture_frame = false;
     bool clear = false;
     bool update_render = false;
 
@@ -60,14 +58,8 @@ void Reco3D::Program::Run()
         });
     vis_.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
-            capture_source = true;
-            newSource = true;
-            return false;
-        });
-    vis_.RegisterKeyCallback(GLFW_KEY_T,
-        [&](visualization::Visualizer* vis) {
-            capture_target = true;
-            newTarget = true;
+            capture_frame = true;
+//            newSource = true;
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_C,
@@ -94,11 +86,11 @@ void Reco3D::Program::Run()
     std::string sourcePath = folder + delim + sourceFilename + extension;
     std::string targetPath = folder + delim + targetFilename + extension;
 
-    // Read existing files
-    Reco3D::PointCloud source;
-    Reco3D::PointCloud target;
-    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
-    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
+//    // Read existing files
+//    Reco3D::PointCloud source;
+//    Reco3D::PointCloud target;
+//    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
+//    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
     do {
@@ -109,97 +101,118 @@ void Reco3D::Program::Run()
 //            continue;
 //        }
 
-// -----------------------------------------------------------------
-// CAPTURE SOURCE
-// -----------------------------------------------------------------
-        // Set source image/pose
-        if (!is_geometry_added || capture_source) {
-            AddSourcePointCloud(source, vis_);
+// // -----------------------------------------------------------------
+// // CAPTURE SOURCE
+// // -----------------------------------------------------------------
+//         // Set source image/pose
+//         if (!is_geometry_added || capture_source) {
+//             AddSourcePointCloud(source, vis_);
+// 
+//             // Flag for update
+//             is_geometry_added = true;
+//             update_render = true;
+//             capture_source = false;
+// //            if (clear)
+// //            {
+// //                vis.ClearGeometries();
+// //                utility::LogInfo("Clearing geometry.");
+// //                if (is_geometry_added)
+// //                {
+// //                    vis.AddGeometry(pts);
+// //                }
+// //                clear = false;
+// //                vis.UpdateRender();
+// //                continue;
+// //            }
+//         } // End Source
+// 
+// 
+//         if (!is_target_added || capture_target) {
+// //            target.points_->VoxelDownSample(VOXEL_SIZE);
+//             utility::LogInfo("Updating target.");
+//             target.SetPose(Reco3D::ImagePose(source.GetPose().inverse() * target.GetPose())); // Put target relative to source
+//             // -----------------------------------------------------------------
+//             // REGISTRATION  (TODO: Refactor registration)
+//             // -----------------------------------------------------------------
+// 
+//              auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+//              auto criteria = open3d::registration::ICPConvergenceCriteria();
+//              double max_correspondence_distance = 0.5;
+//              criteria.max_iteration_ = 30;
+//              auto reg_result = registration::RegistrationICP(
+//                  *source.GetPoints(),
+//                  *target.GetPoints(),
+//                  max_correspondence_distance,
+//                  target.GetPose(),
+//                  estimation,
+//                  criteria
+//              );
+//             // Print fitness, RMSE
+//             double& fitness = reg_result.fitness_; 
+//             double& rmse = reg_result.inlier_rmse_;
+//             std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+//             std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+//             std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+//             utility::LogInfo(log1.c_str());
+//             utility::LogInfo(log2.c_str());
+//             target.GetPoints()->Transform(reg_result.transformation_);
+// 
+//             // -----------------------------------------------------------------
+//             // ADD ALIGNED POINT CLOUDS 
+//             // -----------------------------------------------------------------
+// //            vis_.AddGeometry(target.GetPoints());
+// 
+// 
+//             // -----------------------------------------------------------------
+//             // MESH THE COMBINED POINTS
+//             // -----------------------------------------------------------------
+//             PointsToMesh ptsToMesh_;
+//             PointsVector ptsVector_;
+//             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(source));
+//             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(target));
+//             auto mesh = ptsToMesh_.ToMesh(std::make_shared<Reco3D::PointsVector>(ptsVector_));
+//             vis_.AddGeometry(mesh);
+// 
+//             // Flag for update
+//             capture_target = false;
+//             update_render = true;
+//             is_target_added = true;
+//         } // End target
 
-            // Flag for update
-            is_geometry_added = true;
-            update_render = true;
-            capture_source = false;
-//            if (clear)
-//            {
-//                vis.ClearGeometries();
-//                utility::LogInfo("Clearing geometry.");
-//                if (is_geometry_added)
+// -----------------------------------------------------------------
+// New simpler main loop 
+// -----------------------------------------------------------------
+        if (capture_frame)
+        {
+            capture_frame = false;
+            std::cout << "Capturing frame!" << std::endl;
+            auto im_rgbd = sensor_->CaptureFrame();
+            if (im_rgbd != nullptr) {
+                update_render = true;
+                captureSet_->AddCapture(im_rgbd);
+                // Add geometry pointer if not done before
+//                if (!is_geometry_added)
 //                {
-//                    vis.AddGeometry(pts);
+                vis_.ClearGeometries();
+                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+                    is_geometry_added = true;
 //                }
-//                clear = false;
-//                vis.UpdateRender();
-//                continue;
-//            }
-        } // End Source
-
-
-        if (!is_target_added || capture_target) {
-//            target.points_->VoxelDownSample(VOXEL_SIZE);
-            utility::LogInfo("Updating target.");
-            target.SetPose(Reco3D::ImagePose(source.GetPose().inverse() * target.GetPose())); // Put target relative to source
-            // -----------------------------------------------------------------
-            // REGISTRATION  (TODO: Refactor registration)
-            // -----------------------------------------------------------------
-
-             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-             auto criteria = open3d::registration::ICPConvergenceCriteria();
-             double max_correspondence_distance = 0.5;
-             criteria.max_iteration_ = 30;
-             auto reg_result = registration::RegistrationICP(
-                 *source.GetPoints(),
-                 *target.GetPoints(),
-                 max_correspondence_distance,
-                 target.GetPose(),
-                 estimation,
-                 criteria
-             );
-            // Print fitness, RMSE
-            double& fitness = reg_result.fitness_; 
-            double& rmse = reg_result.inlier_rmse_;
-            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-            utility::LogInfo(log1.c_str());
-            utility::LogInfo(log2.c_str());
-            target.GetPoints()->Transform(reg_result.transformation_);
-
-            // -----------------------------------------------------------------
-            // ADD ALIGNED POINT CLOUDS 
-            // -----------------------------------------------------------------
-//            vis_.AddGeometry(target.GetPoints());
-
-
-            // -----------------------------------------------------------------
-            // MESH THE COMBINED POINTS
-            // -----------------------------------------------------------------
-            PointsToMesh ptsToMesh_;
-            PointsVector ptsVector_;
-            ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(source));
-            ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(target));
-            auto mesh = ptsToMesh_.ToMesh(std::make_shared<Reco3D::PointsVector>(ptsVector_));
-            vis_.AddGeometry(mesh);
-
-            // Flag for update
-            capture_target = false;
-            update_render = true;
-            is_target_added = true;
-        } // End target
-
-
-
-
-
+                std::cout << "Done!" << std::endl;
+            }
+            else
+            {
+                utility::LogInfo("Invalid capture, skipping this frame");
+            }
+        }
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
         if (update_render)
         {
+            std::cout << "Updating geometry!" << std::endl;
             vis_.UpdateGeometry();
             update_render = false;
         }
-
         vis_.PollEvents();
         vis_.UpdateRender();
     } while (!flag_exit);

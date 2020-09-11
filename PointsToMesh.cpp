@@ -18,18 +18,19 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     Reco3D::o3d_PointCloud cloud = *pointsVector->GetCombinedPoints()->GetPoints();
 
+    // Downsample before calculating normals
+    cloud.UniformDownSample(100.0);
+    
     // Point cloud must have normals to mesh
     if (!cloud.HasNormals())
     {
         bool normalsGenerated = cloud.EstimateNormals();
     }
 
-
-    cloud.UniformDownSample(100.0);
-//    cloud.VoxelDownSample(10.0);
-
 //    // Mesh with default parameters - Poisson reconstruction
-    uint64_t depth = 12;
+    // 12 is good
+    // 8 is faster
+    uint64_t depth = 4;
    std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
        open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
 
@@ -81,4 +82,16 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 size_t Reco3D::PointsVector::Count()
 {
     return pointsVector_.size();
+}
+
+std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetSourcePointCloud()
+{
+    if (Count() == 0)
+    {
+        return nullptr;
+    }
+    else
+    {
+        return pointsVector_.at(0);
+    }
 }

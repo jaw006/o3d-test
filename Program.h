@@ -18,6 +18,7 @@
 #include "Open3D/Visualization/Utility/GLHelper.h"
 #include "Types.h"
 #include "PointsToMesh.h"
+#include "RGBDCaptureSet.h"
 
 
 namespace Reco3D
@@ -28,6 +29,7 @@ namespace Reco3D
         Reco3D::IO::RGBDSensor_KinectVive*        sensor_;
         Reco3D::IO::RGBDSensor_Config_KinectVive* sensorConfig_;
         Reco3D::RGBDToPoints*                     converter_;
+        Reco3D::RGBDCaptureSet*                   captureSet_;
         open3d::visualization::VisualizerWithKeyCallback& vis_;
 
     public:
