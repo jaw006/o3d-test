@@ -46,7 +46,7 @@ void Reco3D::Program::Run()
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool capture_frame = false;
+    bool capture_frame = false; // Should be false on startup
     bool clear = false;
     bool update_render = false;
 
@@ -75,7 +75,7 @@ void Reco3D::Program::Run()
 
     // Show backfaces
     vis_.GetRenderOption().ToggleMeshShowBackFace();
-    vis_.GetRenderOption().ToggleMeshShowWireframe();
+//    vis_.GetRenderOption().ToggleMeshShowWireframe();
 
     const std::string sourceFilename = "source";
     const std::string targetFilename = "target";
@@ -113,6 +113,7 @@ void Reco3D::Program::Run()
 //                if (!is_geometry_added)
 //                {
                     vis_.ClearGeometries();
+//                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
                     vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
                     is_geometry_added = true;
 //                }

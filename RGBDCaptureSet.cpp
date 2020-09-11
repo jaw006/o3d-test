@@ -61,19 +61,6 @@ void Reco3D::RGBDCaptureSet::AddCapture(std::shared_ptr<RGBDCapture_t> capture)
     }
     // Create point cloud object from capture
     std::shared_ptr<Reco3D::PointCloud> newPoints(rgbdToPoints_->ToPointCloud(capture));
-
-//    // Transform based on first capture
-//    if (Count() == 0)
-//    {
-//        // Is first capture
-////        newPoints->GetPoints()->Transform(newPoints->GetPose().inverse());
-//    }
-//    else
-//    {
-//        // Is not first capture, transform to source coordinate system
-//        newPoints->GetPoints()->Transform(GetSourcePointCloud()->GetPose().inverse() * newPoints->GetPose());
-//    }
-
     // Insert capture and points
     pointsVector_->AddPoints(newPoints);
     captures_.push_back(capture);
