@@ -103,10 +103,15 @@ void Reco3D::Program::Run()
             {
                 return;
             }
-            capture_frame = false;
             std::cout << "Capturing frame!" << std::endl;
             auto im_rgbd = sensor_->CaptureFrame();
-            if (im_rgbd != nullptr) {
+            if (im_rgbd == nullptr) {
+                utility::LogInfo("Invalid capture, skipping this frame");
+                continue;
+            }
+            else {
+                capture_frame = false;
+//            if (im_rgbd != nullptr) {
                 update_render = true;
                 captureSet_->AddCapture(im_rgbd);
                 // Add geometry pointer if not done before
@@ -118,10 +123,6 @@ void Reco3D::Program::Run()
                     is_geometry_added = true;
 //                }
                 std::cout << "Done!" << std::endl;
-            }
-            else
-            {
-                utility::LogInfo("Invalid capture, skipping this frame");
             }
         }
 // -----------------------------------------------------------------

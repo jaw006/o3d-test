@@ -85,17 +85,19 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     {
 //        // Source transformation
         sourcePose = points->GetPose();
-        points->GetPoints()->Transform(sourcePose.inverse());
-//        points->GetPoints()->Transform(sourcePose.inverse());
-////        source->GetPoints()->Transform(sourcePose.inverse());
-////        srcPtCloud->GetPoints()->Transform(srcPtCloud->GetPose().inverse());
+        sourcePoseInverse = points->GetPose().inverse();
+        points->GetPoints()->Transform(sourcePoseInverse);
+//        points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
     }
     else
     {
-        points->GetPoints()->Transform(sourcePose.inverse() * points->GetPose().inverse() * sourcePose); ///         // Target 
-//         points->GetPoints()->Transform(sourcePose.inverse() * points->GetPose());
-////       auto reg_result = RegisterPoints(GetSourcePointCloud(), points);
-////       points->GetPoints()->Transform(reg_result.transformation_);
+//        auto targetPose = sourcePoseInverse * points->GetPose() * sourcePose;
+//        points->SetPose(targetPose);
+        points->GetPoints()->Transform(points->GetPose().inverse() * sourcePose);
+//        points->GetPoints()->Transform(sourcePoseInverse * points->GetPose().inverse() * sourcePose); ///         // Target 
+//        points->GetPoints()->Transform(newPose);
+//        auto reg_result = RegisterPoints(GetSourcePointCloud(), points);
+//        points->GetPoints()->Transform(reg_result.transformation_);
 //
     }
 ///
@@ -129,7 +131,7 @@ open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPoints(st
 
          auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
          auto criteria = open3d::registration::ICPConvergenceCriteria();
-         double max_correspondence_distance = 0.5;
+         double max_correspondence_distance = 10.0;
          criteria.max_iteration_ = 30;
          auto reg_result = open3d::registration::RegistrationICP(
              *source->GetPoints(),

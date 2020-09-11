@@ -24,6 +24,7 @@ namespace Reco3D {
         std::vector<std::shared_ptr<Reco3D::PointCloud>> pointsVector_;
         std::shared_ptr<Reco3D::PointCloud> combinedPoints_;
         ImagePose sourcePose;
+        ImagePose sourcePoseInverse;
     };
 
     class PointsToMesh
