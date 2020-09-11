@@ -64,7 +64,10 @@ void Reco3D::Program::Run()
         });
     vis_.RegisterKeyCallback(GLFW_KEY_C,
         [&](visualization::Visualizer* vis) {
-            clear = true;
+//            clear = true;
+            captureSet_->Clear();
+            vis->ClearGeometries();
+            vis->UpdateRender();
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_W,

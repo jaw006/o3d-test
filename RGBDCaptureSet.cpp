@@ -70,9 +70,11 @@ void Reco3D::RGBDCaptureSet::AddCapture(std::shared_ptr<RGBDCapture_t> capture)
 void Reco3D::RGBDCaptureSet::Clear()
 {
     pointsVector_.reset(new PointsVector());
-
+    combinedPoints_.reset(new Reco3D::o3d_PointCloud());
+    combinedMesh_.reset(new Reco3D::o3d_TriMesh());
     // This might be memory unsafe
     captures_.clear();
+    points_.clear();
 }
 
 size_t Reco3D::RGBDCaptureSet::Count()
