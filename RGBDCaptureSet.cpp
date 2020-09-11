@@ -28,14 +28,15 @@ open3d::registration::RegistrationResult RegisterPoints(std::shared_ptr<Reco3D::
 
 std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDCaptureSet::GetSourcePointCloud()
 {
-    if (Count() == 0)
-    {
-        return nullptr;
-    }
-    else
-    {
-        return points_.at(0);
-    }
+    return pointsVector_->GetSourcePointCloud();
+//    if (Count() == 0)
+//    {
+//        return nullptr;
+//    }
+//    else
+//    {
+//        return points_.at(0);
+//    }
 }
 
 Reco3D::RGBDCaptureSet::RGBDCaptureSet() :

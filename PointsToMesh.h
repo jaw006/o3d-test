@@ -17,6 +17,7 @@ namespace Reco3D {
         std::shared_ptr<Reco3D::PointCloud> GetCombinedPoints();
         bool AddPoints(std::shared_ptr<Reco3D::PointCloud> points);
         size_t Count();
+        std::shared_ptr<Reco3D::PointCloud> GetSourcePointCloud();
 
     private:
         std::vector<std::shared_ptr<Reco3D::PointCloud>> pointsVector_;

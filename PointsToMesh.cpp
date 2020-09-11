@@ -83,3 +83,15 @@ size_t Reco3D::PointsVector::Count()
 {
     return pointsVector_.size();
 }
+
+std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetSourcePointCloud()
+{
+    if (Count() == 0)
+    {
+        return nullptr;
+    }
+    else
+    {
+        return pointsVector_.at(0);
+    }
+}
