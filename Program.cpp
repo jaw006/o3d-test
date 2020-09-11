@@ -94,96 +94,15 @@ void Reco3D::Program::Run()
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
     do {
-        // Doing this every frame is very taxing on CPU
-//        auto im_rgbd = sensor_->CaptureFrame();
-//        if (im_rgbd == nullptr) {
-//            utility::LogInfo("Invalid capture, skipping this frame");
-//            continue;
-//        }
-
-// // -----------------------------------------------------------------
-// // CAPTURE SOURCE
-// // -----------------------------------------------------------------
-//         // Set source image/pose
-//         if (!is_geometry_added || capture_source) {
-//             AddSourcePointCloud(source, vis_);
-// 
-//             // Flag for update
-//             is_geometry_added = true;
-//             update_render = true;
-//             capture_source = false;
-// //            if (clear)
-// //            {
-// //                vis.ClearGeometries();
-// //                utility::LogInfo("Clearing geometry.");
-// //                if (is_geometry_added)
-// //                {
-// //                    vis.AddGeometry(pts);
-// //                }
-// //                clear = false;
-// //                vis.UpdateRender();
-// //                continue;
-// //            }
-//         } // End Source
-// 
-// 
-//         if (!is_target_added || capture_target) {
-// //            target.points_->VoxelDownSample(VOXEL_SIZE);
-//             utility::LogInfo("Updating target.");
-//             target.SetPose(Reco3D::ImagePose(source.GetPose().inverse() * target.GetPose())); // Put target relative to source
-//             // -----------------------------------------------------------------
-//             // REGISTRATION  (TODO: Refactor registration)
-//             // -----------------------------------------------------------------
-// 
-//              auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-//              auto criteria = open3d::registration::ICPConvergenceCriteria();
-//              double max_correspondence_distance = 0.5;
-//              criteria.max_iteration_ = 30;
-//              auto reg_result = registration::RegistrationICP(
-//                  *source.GetPoints(),
-//                  *target.GetPoints(),
-//                  max_correspondence_distance,
-//                  target.GetPose(),
-//                  estimation,
-//                  criteria
-//              );
-//             // Print fitness, RMSE
-//             double& fitness = reg_result.fitness_; 
-//             double& rmse = reg_result.inlier_rmse_;
-//             std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-//             std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-//             std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-//             utility::LogInfo(log1.c_str());
-//             utility::LogInfo(log2.c_str());
-//             target.GetPoints()->Transform(reg_result.transformation_);
-// 
-//             // -----------------------------------------------------------------
-//             // ADD ALIGNED POINT CLOUDS 
-//             // -----------------------------------------------------------------
-// //            vis_.AddGeometry(target.GetPoints());
-// 
-// 
-//             // -----------------------------------------------------------------
-//             // MESH THE COMBINED POINTS
-//             // -----------------------------------------------------------------
-//             PointsToMesh ptsToMesh_;
-//             PointsVector ptsVector_;
-//             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(source));
-//             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(target));
-//             auto mesh = ptsToMesh_.ToMesh(std::make_shared<Reco3D::PointsVector>(ptsVector_));
-//             vis_.AddGeometry(mesh);
-// 
-//             // Flag for update
-//             capture_target = false;
-//             update_render = true;
-//             is_target_added = true;
-//         } // End target
-
 // -----------------------------------------------------------------
 // New simpler main loop 
 // -----------------------------------------------------------------
         if (capture_frame)
         {
+            if (!sensor_)
+            {
+                return;
+            }
             capture_frame = false;
             std::cout << "Capturing frame!" << std::endl;
             auto im_rgbd = sensor_->CaptureFrame();
@@ -193,8 +112,8 @@ void Reco3D::Program::Run()
                 // Add geometry pointer if not done before
 //                if (!is_geometry_added)
 //                {
-                vis_.ClearGeometries();
-                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+                    vis_.ClearGeometries();
+                    vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
                     is_geometry_added = true;
 //                }
                 std::cout << "Done!" << std::endl;
@@ -210,7 +129,11 @@ void Reco3D::Program::Run()
         if (update_render)
         {
             std::cout << "Updating geometry!" << std::endl;
-            vis_.UpdateGeometry();
+            if (is_geometry_added)
+            {
+//                vis_.UpdateGeometry(captureSet_->GetCombinedTriangleMesh());
+                vis_.UpdateGeometry();
+            }
             update_render = false;
         }
         vis_.PollEvents();

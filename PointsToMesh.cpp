@@ -70,9 +70,21 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     // TODO: Check for duplicates, return false if not added
     if (points == nullptr)
         return false;
+    // Transform to shared coord system
+    if (Count() > 0)
+    {
+//        points->GetPoints()->Transform(GetSourcePointCloud()->GetPose().inverse() * points->GetPose());
+        points->GetPoints()->Transform(points->GetPose().inverse());
+    }
+    else
+    {
+        points->GetPoints()->Transform(points->GetPose().inverse());
+    }
 
     // Add points together
     pointsVector_.push_back(points);
+
+
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
     *addedPts = *combinedPoints_->GetPoints() + *points->GetPoints();
     combinedPoints_->SetPoints(addedPts);
