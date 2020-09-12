@@ -18,7 +18,9 @@ namespace Reco3D
 		PointCloud();
 		~PointCloud();
         ImagePose GetPose() 		    { return capture_->pose_; };
+        ImageQuaternion GetQuat() 		{ return capture_->quat_; };
         void SetPose(ImagePose pose)  { capture_->pose_ = pose; };
+        void SetQuat(ImageQuaternion quat )  { capture_->quat_ = quat; };
 		void SetPoints(std::shared_ptr<o3d_PointCloud> points) { std::swap(points_ ,points); };
 		std::shared_ptr<o3d_PointCloud> GetPoints() { return points_; }
 	};

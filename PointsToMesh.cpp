@@ -95,52 +95,59 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //        points->GetPoints()->Transform(reg_result.transformation_);
 //
     }
+    // https://stackoverflow.com/questions/58727178/having-trouble-aligning-2d-lidar-pointcloud-to-match-the-coordinate-system-of-ht
     // Construct inverse by transposing rotation and negating transform
     // https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
-    ImagePose pose = points->GetPose();
 
-    ImagePose posePosition = ImagePose::Identity();
-    ImagePose inversePosePosition = ImagePose::Identity();
+    ImagePose pose = points->GetPose();
+    ImageQuaternion quat = points->GetQuat();
+    Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d inversePosePositionMatrix = Eigen::Matrix4d::Identity();
+    Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
+    Eigen::Vector3d posePosition;
     posePosition(0, 3) =  pose(0,3);
     posePosition(1, 3) =  pose(1,3);
     posePosition(2, 3) =  pose(2,3);
-    inversePosePosition(0, 3) = -pose(0,3);
-    inversePosePosition(1, 3) = -pose(1,3);
-    inversePosePosition(2, 3) = -pose(2,3);
+    Eigen::Vector3d inversePosePosition = -posePosition;
+    posePositionMatrix(0, 3) = pose(0, 3);
+    posePositionMatrix(1, 3) = pose(1, 3);
+    posePositionMatrix(2, 3) = pose(2, 3);
+    inversePosePositionMatrix(0, 3) = -pose(0, 3);
+    inversePosePositionMatrix(1, 3) = -pose(1, 3);
+    inversePosePositionMatrix(2, 3) = -pose(2, 3);
 
     ImagePose poseRotation = pose;
-   poseRotation(0, 3) = 0.0;
-   poseRotation(1, 3) = 0.0;
-   poseRotation(2, 3) = 0.0;
-   poseRotation(3, 0) = 0.0;
-   poseRotation(3, 1) = 0.0;
-   poseRotation(3, 2) = 0.0;
-   poseRotation(3, 3) = 1.0;
-   ImagePose inversePoseRotation = poseRotation;
-   inversePoseRotation.transposeInPlace();
-
-    ImagePose inverse = inversePoseRotation * inversePosePosition;
+    poseRotation(0, 3) = 0.0;
+    poseRotation(1, 3) = 0.0;
+    poseRotation(2, 3) = 0.0;
+    poseRotation(3, 0) = 0.0;
+    poseRotation(3, 1) = 0.0;
+    poseRotation(3, 2) = 0.0;
+    poseRotation(3, 3) = 1.0;
+    ImagePose inversePoseRotation = poseRotation;
+    inversePoseRotation.transposeInPlace();
 
     std::cout << "Pose:\n" << pose << std::endl;
-    std::cout << "Inverse Position:\n" << inversePosePosition << std::endl;
-    std::cout << "Rotation:\n" << poseRotation << std::endl;
-    std::cout << "Inverse Rotation:\n" << inversePoseRotation << std::endl;
-    std::cout << "Inverse Pose:\n" << inverse << std::endl;
-    std::cout << "InversePose * Pose:\n" << inverse*pose << std::endl;
-    std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
+    std::cout << "Quaternion:\n" << quat << std::endl;
+    std::cout << "QuaternionRotation:\n" << quatRotation << std::endl;
+    std::cout << "posePositionMatrix:\n" << posePositionMatrix << std::endl;
+    std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
+    std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
+//    std::cout << "Inverse Pose:\n" << inverse << std::endl;
+//    std::cout << "InversePose * Pose:\n" << inverse*pose << std::endl;
+//    std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
 
-//    points->GetPoints()->Transform(inversePosePosition);
-//    points->GetPoints()->Transform(pose);
-//    points->GetPoints()->Transform(inverse);
+//    points->GetPoints()->Rotate(quatRotation, inversePosePosition);
+//    points->GetPoints()->Transform(posePositionMatrix);
     points->GetPoints()->Transform(inversePoseRotation);
-    points->GetPoints()->Transform(inversePosePosition);
-//    points->GetPoints()->Transform(poseRotation);
-//    points->GetPoints()->Transform(posePosition);
+//    points->GetPoints()->Transform(inversePosePositionMatrix);
+//    points->GetPoints()->Transform(posePositionMatrix);
+//    points->GetPoints()->Transform(pose.inverse());
     pointsVector_.push_back(points);
 
-    std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
-    *addedPts = *combinedPoints_->GetPoints() + *points->GetPoints();
-    combinedPoints_->SetPoints(addedPts);
+//    std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
+//    *addedPts = *combinedPoints_->GetPoints() + *points->GetPoints();
+//    combinedPoints_->SetPoints(addedPts);
     return true;
 }
 

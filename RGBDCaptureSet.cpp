@@ -87,6 +87,11 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDCaptureSet::GetCombinedPointClou
     return pointsVector_->GetCombinedPoints();
 }
 
+const std::vector<std::shared_ptr<Reco3D::PointCloud>>& Reco3D::RGBDCaptureSet::GetPointsVector()
+{
+    return pointsVector_->GetPointsVector();
+}
+
 std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::RGBDCaptureSet::GetCombinedTriangleMesh()
 {
     return pointsToMesh_->ToMesh(pointsVector_);

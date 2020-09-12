@@ -122,7 +122,12 @@ void Reco3D::Program::Run()
                 update_render = true;
                 captureSet_->AddCapture(im_rgbd);
               // Add geometry pointer if not done before
-                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
+                auto pointsVector = captureSet_->GetPointsVector();
+                for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+                {
+                    vis_.AddGeometry((*pointIt)->GetPoints());
+                }
+//                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
                 is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
             }

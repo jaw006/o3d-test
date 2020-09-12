@@ -112,7 +112,7 @@ Eigen::Matrix3d Reco3D::VTPLibInterface::GetTrackerRotation(TrackerId& deviceId)
     return m;
 }
 
-Eigen::Vector4d Reco3D::VTPLibInterface::GetTrackerQuaternion(TrackerId& deviceId)
+Reco3D::ImageQuaternion Reco3D::VTPLibInterface::GetTrackerQuaternion(TrackerId& deviceId)
 {
     auto q = GetPose(deviceId).Quaternion;
     Eigen::Vector4d quat;

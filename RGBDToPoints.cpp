@@ -22,7 +22,7 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
         INTRINSIC_CX,
         INTRINSIC_CY);
     auto new_img = MakeNewRGBDImage(capture->image_);
-    auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic);
+    auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic,capture->pose_.inverse());
     std::shared_ptr<Reco3D::PointCloud> cloud = std::make_shared<Reco3D::PointCloud>(img, capture);
     return cloud;
 }
