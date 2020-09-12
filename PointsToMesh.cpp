@@ -132,10 +132,10 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //    points->GetPoints()->Transform(inversePosePosition);
 //    points->GetPoints()->Transform(pose);
 //    points->GetPoints()->Transform(inverse);
+    points->GetPoints()->Transform(inversePoseRotation);
     points->GetPoints()->Transform(inversePosePosition);
 //    points->GetPoints()->Transform(poseRotation);
 //    points->GetPoints()->Transform(posePosition);
-//    points->GetPoints()->Transform(inversePoseRotation);
     pointsVector_.push_back(points);
 
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
