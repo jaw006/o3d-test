@@ -67,6 +67,9 @@ void Reco3D::Program::Run()
 //            clear = true;
             captureSet_->Clear();
             vis->ClearGeometries();
+            // Add coord system
+            vis_.AddGeometry(open3d::geometry::TriangleMesh::CreateCoordinateFrame());
+            vis_.UpdateGeometry();
             vis->UpdateRender();
             return false;
         });
@@ -94,8 +97,10 @@ void Reco3D::Program::Run()
 //    Reco3D::PointCloud target;
 //    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
 //    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
+    open3d::visualization::glsl::CoordinateFrameRenderer coords;
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
+
     do {
 // -----------------------------------------------------------------
 // New simpler main loop 
@@ -114,17 +119,11 @@ void Reco3D::Program::Run()
             }
             else {
                 capture_frame = false;
-//            if (im_rgbd != nullptr) {
                 update_render = true;
                 captureSet_->AddCapture(im_rgbd);
-                // Add geometry pointer if not done before
-//                if (!is_geometry_added)
-//                {
-                    vis_.ClearGeometries();
-//                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
-                    vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
-                    is_geometry_added = true;
-//                }
+              // Add geometry pointer if not done before
+                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
+                is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
             }
         }

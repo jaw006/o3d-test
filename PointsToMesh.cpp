@@ -98,7 +98,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     // Construct inverse by transposing rotation and negating transform
     // https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
     ImagePose pose = points->GetPose().inverse();
-    points->GetPoints()->Transform(pose);
+//    points->GetPoints()->Transform(pose);
 
     ImagePose inversePosePosition = ImagePose::Identity();
     inversePosePosition(0, 3) = -pose(0,3);
