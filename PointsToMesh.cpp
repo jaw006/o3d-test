@@ -65,7 +65,7 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 //        {
 //            // Set pose from the first point cloud in vector 
 //            const ImagePose& sourcePose = sourcePointCloud->GetPose();
-            combinedPoints_->SetPose(sourcePose);
+//            combinedPoints_->SetPose(sourcePose);
 //        }
 //    }
     return combinedPoints_;
@@ -78,7 +78,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
          return false;
 
     // Downsample before calculating normals
-    points->GetPoints()->UniformDownSample(100.0);
+    points->GetPoints()->UniformDownSample(1000.0);
 
 //    // Transform to shared coord system
     if (Count() == 0)
@@ -86,45 +86,56 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //        // Source transformation
         sourcePose = points->GetPose();
         sourcePoseInverse = points->GetPose().inverse();
-        points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+ //       points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
     }
     else
     {
-        points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 1.0-(Count()*0.2), 1.0-(Count()*0.1)));
+//        points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 1.0-(Count()*0.2), 1.0-(Count()*0.1)));
 //        auto reg_result = RegisterPoints(GetSourcePointCloud(), points);
 //        points->GetPoints()->Transform(reg_result.transformation_);
 //
     }
     // Construct inverse by transposing rotation and negating transform
     // https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
-    ImagePose pose = points->GetPose().inverse();
-//    points->GetPoints()->Transform(pose);
+    ImagePose pose = points->GetPose();
 
+    ImagePose posePosition = ImagePose::Identity();
     ImagePose inversePosePosition = ImagePose::Identity();
+    posePosition(0, 3) =  pose(0,3);
+    posePosition(1, 3) =  pose(1,3);
+    posePosition(2, 3) =  pose(2,3);
     inversePosePosition(0, 3) = -pose(0,3);
     inversePosePosition(1, 3) = -pose(1,3);
     inversePosePosition(2, 3) = -pose(2,3);
 
-    ImagePose inversePoseRotation = pose;
-    inversePoseRotation.transposeInPlace();
-    inversePoseRotation(0, 3) = 0.0;
-    inversePoseRotation(1, 3) = 0.0;
-    inversePoseRotation(2, 3) = 0.0;
-    inversePoseRotation(3, 0) = 0.0;
-    inversePoseRotation(3, 1) = 0.0;
-    inversePoseRotation(3, 2) = 0.0;
-    inversePoseRotation(3, 3) = 1.0;
+    ImagePose poseRotation = pose;
+   poseRotation(0, 3) = 0.0;
+   poseRotation(1, 3) = 0.0;
+   poseRotation(2, 3) = 0.0;
+   poseRotation(3, 0) = 0.0;
+   poseRotation(3, 1) = 0.0;
+   poseRotation(3, 2) = 0.0;
+   poseRotation(3, 3) = 1.0;
+   ImagePose inversePoseRotation = poseRotation;
+   inversePoseRotation.transposeInPlace();
 
     ImagePose inverse = inversePoseRotation * inversePosePosition;
 
     std::cout << "Pose:\n" << pose << std::endl;
     std::cout << "Inverse Position:\n" << inversePosePosition << std::endl;
+    std::cout << "Rotation:\n" << poseRotation << std::endl;
     std::cout << "Inverse Rotation:\n" << inversePoseRotation << std::endl;
     std::cout << "Inverse Pose:\n" << inverse << std::endl;
     std::cout << "InversePose * Pose:\n" << inverse*pose << std::endl;
     std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
 
-    points->GetPoints()->Transform(pose*inverse);
+//    points->GetPoints()->Transform(inversePosePosition);
+//    points->GetPoints()->Transform(pose);
+//    points->GetPoints()->Transform(inverse);
+    points->GetPoints()->Transform(inversePosePosition);
+//    points->GetPoints()->Transform(poseRotation);
+//    points->GetPoints()->Transform(posePosition);
+//    points->GetPoints()->Transform(inversePoseRotation);
     pointsVector_.push_back(points);
 
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
