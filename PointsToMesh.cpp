@@ -104,12 +104,12 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     // +Z corresponds to -Y
     ImagePose pose = points->GetPose();
     ImageQuaternion quat = points->GetQuat();
-    Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
-    Eigen::Matrix4d inversePosePositionMatrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
     Eigen::Matrix3d quatRotationInverse = quatRotation;
     quatRotationInverse.transposeInPlace();
 
+    Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d inversePosePositionMatrix = Eigen::Matrix4d::Identity();
     Eigen::Vector3d posePosition;
     posePosition(0, 3) =  pose(0,3);
     posePosition(1, 3) =  pose(1,3);
@@ -149,36 +149,21 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
     std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
 
-    // Transfomration from tracker space to camera space
-    Eigen::Quaternion<double> q;
-    Eigen::Vector3d from(0.0, 0.0, 1.0);
-    Eigen::Vector3d to(1.0, 0.0, -1.0);
-    q.setFromTwoVectors(from, to);
-    q.normalize();
-//    Eigen::Matrix3d rotMat = q.toRotationMatrix();
-
-    Eigen::Matrix3d rotMat = points->GetPoints()->GetRotationMatrixFromAxisAngle(Eigen::Vector3d(0.0, 0.0, M_PI/2.0));
-    std::cout << "rotMat:\n" << rotMat << std::endl;
+//    Eigen::Affine3d t;
+    // Rotate -90 in Z axis
+//    t.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
+//    points->GetPoints()->Transform(t.matrix());
 
 //    std::cout << "Inverse Pose:\n" << inverse << std::endl;
 //    std::cout << "InversePose * Pose:\n" << inverse*pose << std::endl;
 //    std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
 //    Eigen::Matrix4d transformationMat = inversePosePositionMatrix * inversePoseRotation;
 
-//    points->GetPoints()->Transform(inversePosePositionMatrix);
-//  points->GetPoints()->Rotate(quatRotationInverse, posePosition);
+//    points->GetPoints()->Translate(posePosition, false);
+    points->GetPoints()->Transform(pose.inverse());
+    points->GetPoints()->Rotate(quatRotation, Eigen::Vector3d(0.0, 0.0, 0.0));
+//    points->GetPoints()->Rotate(quatRotation, points->GetPoints()->GetCenter());
 
-//    points->GetPoints()->Rotate(quatRotation, posePosition);
-//    points->GetPoints()->Transform(posePositionMatrix);
-//  points->GetPoints()->Transform(pose);
-//  points->GetPoints()->Transform(inversePoseRotation);
-//  points->GetPoints()->Rotate(quatRotationInverse, Eigen::Vector3d(0,0,0));
-//  points->GetPoints()->Transform(inversePosePositionMatrix);
-//  points->GetPoints()->Transform(poseRotation);
-//  points->GetPoints()->Transform(pose.inverse());
-//    points->GetPoints()->Transform(inversePosePositionMatrix);
-//    points->GetPoints()->Transform(posePositionMatrix);
-//    points->GetPoints()->Transform(pose.inverse());
 //    points->GetPoints()->PaintUniformColor(Eigen::Vector3d(0.0, 1.0, 0.0));
     pointsVector_.push_back(points);
 
