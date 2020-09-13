@@ -15,10 +15,12 @@ namespace Reco3D
 		std::shared_ptr<RGBDCapture_t> capture_;
 	public:
 		PointCloud(std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<RGBDCapture_t> capture);
+//		PointCloud(PointCloud& p2);
 		PointCloud();
 		~PointCloud();
         ImagePose GetPose() 		    { return capture_->pose_; };
         ImageQuaternion GetQuat() 		{ return capture_->quat_; };
+		std::shared_ptr<RGBDCapture_t> GetCapture() { return capture_; };
         void SetPose(ImagePose pose)  { capture_->pose_ = pose; };
         void SetQuat(ImageQuaternion quat )  { capture_->quat_ = quat; };
 		void SetPoints(std::shared_ptr<o3d_PointCloud> points) { std::swap(points_ ,points); };

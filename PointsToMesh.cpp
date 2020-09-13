@@ -86,7 +86,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //        // Source transformation
         sourcePose = points->GetPose();
         sourcePoseInverse = points->GetPose().inverse();
- //       points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+//       points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
     }
     else
     {
@@ -97,13 +97,19 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     }
     // https://stackoverflow.com/questions/58727178/having-trouble-aligning-2d-lidar-pointcloud-to-match-the-coordinate-system-of-ht
     // Construct inverse by transposing rotation and negating transform
+    // Camera forward is +Z
     // https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
+    // http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html
 
+    // +Z corresponds to -Y
     ImagePose pose = points->GetPose();
     ImageQuaternion quat = points->GetQuat();
     Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d inversePosePositionMatrix = Eigen::Matrix4d::Identity();
     Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
+    Eigen::Matrix3d quatRotationInverse = quatRotation;
+    quatRotationInverse.transposeInPlace();
+
     Eigen::Vector3d posePosition;
     posePosition(0, 3) =  pose(0,3);
     posePosition(1, 3) =  pose(1,3);
@@ -127,22 +133,53 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     ImagePose inversePoseRotation = poseRotation;
     inversePoseRotation.transposeInPlace();
 
+    // Copy untransformed points
+//    std::shared_ptr<Reco3D::o3d_PointCloud> pointsCopy = std::make_shared<Reco3D::o3d_PointCloud>();
+//    *pointsCopy += *points->GetPoints();
+//    std::shared_ptr<Reco3D::PointCloud> copyPts = std::make_shared<Reco3D::PointCloud>(pointsCopy, points->GetCapture());
+//    copyPts->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
+////    pointsCopy->GetPoints()->Transform(pose.inverse());
+//    pointsVector_.push_back(copyPts);
+
     std::cout << "Pose:\n" << pose << std::endl;
     std::cout << "Quaternion:\n" << quat << std::endl;
+    std::cout << "Quaternion.w:\n" << std::to_string(quat(0)) << std::endl;
     std::cout << "QuaternionRotation:\n" << quatRotation << std::endl;
     std::cout << "posePositionMatrix:\n" << posePositionMatrix << std::endl;
     std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
     std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
+
+    // Transfomration from tracker space to camera space
+    Eigen::Quaternion<double> q;
+    Eigen::Vector3d from(0.0, 0.0, 1.0);
+    Eigen::Vector3d to(1.0, 0.0, -1.0);
+    q.setFromTwoVectors(from, to);
+    q.normalize();
+//    Eigen::Matrix3d rotMat = q.toRotationMatrix();
+
+    Eigen::Matrix3d rotMat = points->GetPoints()->GetRotationMatrixFromAxisAngle(Eigen::Vector3d(0.0, 0.0, M_PI/2.0));
+    std::cout << "rotMat:\n" << rotMat << std::endl;
+
 //    std::cout << "Inverse Pose:\n" << inverse << std::endl;
 //    std::cout << "InversePose * Pose:\n" << inverse*pose << std::endl;
 //    std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
+//    Eigen::Matrix4d transformationMat = inversePosePositionMatrix * inversePoseRotation;
 
-//    points->GetPoints()->Rotate(quatRotation, inversePosePosition);
+//    points->GetPoints()->Transform(inversePosePositionMatrix);
+//  points->GetPoints()->Rotate(quatRotationInverse, posePosition);
+
+//    points->GetPoints()->Rotate(quatRotation, posePosition);
 //    points->GetPoints()->Transform(posePositionMatrix);
-    points->GetPoints()->Transform(inversePoseRotation);
+//  points->GetPoints()->Transform(pose);
+//  points->GetPoints()->Transform(inversePoseRotation);
+//  points->GetPoints()->Rotate(quatRotationInverse, Eigen::Vector3d(0,0,0));
+//  points->GetPoints()->Transform(inversePosePositionMatrix);
+//  points->GetPoints()->Transform(poseRotation);
+//  points->GetPoints()->Transform(pose.inverse());
 //    points->GetPoints()->Transform(inversePosePositionMatrix);
 //    points->GetPoints()->Transform(posePositionMatrix);
 //    points->GetPoints()->Transform(pose.inverse());
+//    points->GetPoints()->PaintUniformColor(Eigen::Vector3d(0.0, 1.0, 0.0));
     pointsVector_.push_back(points);
 
 //    std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());

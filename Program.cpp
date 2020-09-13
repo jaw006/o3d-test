@@ -41,6 +41,22 @@ bool Reco3D::LoadPlyPoseToPointCloud(std::string& sourcePath,  const std::string
     return false;
 }
 
+void Reco3D::Program::ExportAllPoints()
+{
+    std::time_t result = std::time(nullptr);
+    std::string file_prefix = std::to_string(result) + "_";
+    uint64_t captureNum = 0;
+    auto pointsVector = captureSet_->GetPointsVector();
+    for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+    {
+        std::string filename = file_prefix + std::to_string(captureNum);
+        auto capture = (*pointIt)->GetCapture();
+        auto points = (*pointIt)->GetPoints();
+        converter_->ExportCapture(filename, points, capture);
+        captureNum++;
+    }
+}
+
 void Reco3D::Program::Run()
 {
     // Status booleans
@@ -59,6 +75,12 @@ void Reco3D::Program::Run()
     vis_.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
             capture_frame = true;
+//            newSource = true;
+            return false;
+        });
+    vis_.RegisterKeyCallback(GLFW_KEY_E,
+        [&](visualization::Visualizer* vis) {
+            ExportAllPoints();
 //            newSource = true;
             return false;
         });
@@ -132,6 +154,10 @@ void Reco3D::Program::Run()
                 std::cout << "Done!" << std::endl;
             }
         }
+
+        // TRACKER POSE
+//        Eigen::Matrix4d trackerPose = sensor_->GetTrackerPose();
+//        std::cout << trackerPose << std::endl;
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------

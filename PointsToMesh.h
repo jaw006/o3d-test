@@ -1,7 +1,11 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+
 #include <memory>
+#include <math.h>
 #include <Open3D/Open3D.h>
+#include <Eigen/Geometry>
 #include "Types.h"
 #include "PointCloud.h"
 

@@ -36,6 +36,7 @@ namespace Reco3D
     public:
         Program(open3d::visualization::VisualizerWithKeyCallback& vis);
         ~Program();
+        void ExportAllPoints();
         void Run();
 
         // Helper methods

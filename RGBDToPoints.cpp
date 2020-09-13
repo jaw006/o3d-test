@@ -22,7 +22,9 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
         INTRINSIC_CX,
         INTRINSIC_CY);
     auto new_img = MakeNewRGBDImage(capture->image_);
-    auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic,capture->pose_.inverse());
+    auto extrinsic = capture->pose_.inverse(); // maps camera pose to world coords
+//    auto extrinsic = Eigen::Matrix4d::Identity(); // maps camera pose to world coords
+    auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic,extrinsic);
     std::shared_ptr<Reco3D::PointCloud> cloud = std::make_shared<Reco3D::PointCloud>(img, capture);
     return cloud;
 }
@@ -33,10 +35,24 @@ std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::MakeNewRGBDIm
     return open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, 1000.0, 3.0, false);
 }
 
-bool Reco3D::RGBDToPoints::ExportCapture(std::string filename, 
-    std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<Reco3D::RGBDCapture_t> capture)
+bool Reco3D::RGBDToPoints::ExportCapture(std::string filename,
+        std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<Reco3D::RGBDCapture_t> capture)
 {
     return ExportPLY(filename, points) && ExportPose(filename, capture);
+}
+
+bool Reco3D::RGBDToPoints::ExportCapture(
+        std::shared_ptr<o3d_PointCloud> points, std::shared_ptr<Reco3D::RGBDCapture_t> capture)
+{
+    std::string name = GetLocalTimeString();
+    return ExportPLY(name, points) && ExportPose(name, capture);
+}
+
+std::string Reco3D::RGBDToPoints::GetLocalTimeString()
+{
+    std::time_t result = std::time(nullptr);
+    std::string name(std::asctime(std::localtime(&result)));
+    return name;
 }
 
 bool Reco3D::RGBDToPoints::ExportPLY(std::string filename, std::shared_ptr<Reco3D::o3d_PointCloud> points)
