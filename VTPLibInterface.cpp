@@ -35,7 +35,7 @@ Eigen::Matrix4d Reco3D::VTPLibInterface::GetTrackerMatrix4d(TrackerId& deviceId)
     auto device = system_->GetDevice(deviceId);
     if (device.IsValid() && device.GetDeviceClass() != vtp::DeviceClass::Invalid)
     {
-        vtp::Pose_t& pose = device.GetPose();
+        vtp::Pose_t& pose = device.GetPose();    
 //        //DEBUG
 //        std::cout << "Pose.Position=" << pose.Position.toString() << std::endl;
 //        std::cout << "Pose.Rotation=" << std::endl << pose.Rotation.toString() << std::endl;
