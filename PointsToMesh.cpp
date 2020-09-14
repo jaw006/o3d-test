@@ -152,10 +152,10 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 
     // // Transform points by rotating 180 on Z axis and -90 on Y axisE?
     Eigen::Affine3d aff = Eigen::Affine3d::Identity();
-//    aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+    aff.rotate(Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX()));
 //    Eigen::Matrix4d rotMat = aff.matrix();
 //    std::cout << "RotMat:\n" << rotMat << std::endl;
-//    points->GetPoints()->Transform(rotMat);
+    points->GetPoints()->Transform(aff.matrix());
 
     // Eigen::Matrix4d poseInv = capture->pose_.inverse();
     // Eigen::Matrix4d newPose = poseInv * t.matrix();
@@ -171,7 +171,9 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 
     // This was being done before
 //    points->GetPoints()->Transform(pose.inverse());
-//    points->GetPoints()->Rotate(quatRotation, Eigen::Vector3d(0.0, 0.0, 0.0));
+    points->GetPoints()->Transform(posePositionMatrix);
+    points->GetPoints()->Rotate(quatRotation, posePosition);
+//    points->GetPoints()->Transform(inversePosePositionMatrix);
 
 //    points->GetPoints()->Rotate(quatRotation, points->GetPoints()->GetCenter());
 //    points->GetPoints()->PaintUniformColor(Eigen::Vector3d(0.0, 1.0, 0.0));
