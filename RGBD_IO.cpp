@@ -44,10 +44,10 @@ Reco3D::ImagePose Reco3D::IO::RGBDSensor_KinectVive::GetTrackerPose()
     {
         Reco3D::ImagePose pose = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
         // Transformation from Tracker to Camera coords
-        Eigen::Affine3d aff = Eigen::Affine3d::Identity();
-        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
-        aff.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX()));
-//        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+        const Eigen::Affine3d aff = 
+                    Eigen::Affine3d::Identity() *
+                    Eigen::AngleAxisd(M_PI,     Eigen::Vector3d::UnitZ()) *
+                    Eigen::AngleAxisd(M_PI/2,   Eigen::Vector3d::UnitX());
         pose *= aff.matrix();
         return pose;
     }
