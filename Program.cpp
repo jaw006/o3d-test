@@ -182,9 +182,9 @@ void Reco3D::Program::Run()
             update_render = false;
         }
         // Update tracker
-        trackerMesh->Transform(trackerPose);
-        trackerPose = sensor_->GetTrackerPose();
         trackerMesh->Transform(trackerPose.inverse());
+        trackerPose = sensor_->GetTrackerPose();
+        trackerMesh->Transform(trackerPose);
         vis_.UpdateGeometry();
         vis_.PollEvents();
         vis_.UpdateRender();

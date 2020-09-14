@@ -1,5 +1,7 @@
 #pragma once
+#define _USE_MATH_DEFINES
 #include <memory>
+#include <math.h>
 #include <Open3D/Open3D.h>
 #include <k4a/k4a.h>
 #include "VTPLibInterface.h"
