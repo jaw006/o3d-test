@@ -41,7 +41,7 @@ Reco3D::ImagePose Reco3D::IO::RGBDSensor_KinectVive::GetTrackerPose()
 {
     if (vtpInterface_)
     {
-        vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
+        return vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
     }
     return ImagePose();
 }
