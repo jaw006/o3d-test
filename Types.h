@@ -5,6 +5,7 @@
 namespace Reco3D
 {
 	typedef Eigen::Matrix4d ImagePose;
+	typedef Eigen::Vector4d ImageQuaternion;
 	typedef std::shared_ptr<open3d::geometry::RGBDImage> ImageRGBD;
 
 	// Struct to encapsulate pose transform and image data
@@ -13,6 +14,7 @@ namespace Reco3D
 		RGBDCapture_t() {};
 		ImagePose pose_;
 		ImageRGBD image_;
+		ImageQuaternion quat_;
 	};
 
     typedef open3d::geometry::PointCloud   o3d_PointCloud;

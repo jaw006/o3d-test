@@ -26,6 +26,7 @@ namespace Reco3D
     class Program
     {
     private:
+        // Why does RGBDCaptureSet have a PointsVector? 
         Reco3D::IO::RGBDSensor_KinectVive*        sensor_;
         Reco3D::IO::RGBDSensor_Config_KinectVive* sensorConfig_;
         Reco3D::RGBDToPoints*                     converter_;
@@ -35,6 +36,7 @@ namespace Reco3D
     public:
         Program(open3d::visualization::VisualizerWithKeyCallback& vis);
         ~Program();
+        void ExportAllPoints();
         void Run();
 
         // Helper methods

@@ -1,6 +1,7 @@
 #pragma once
 #include <Eigen/Core>
 #include "thirdparty/ViveTrackerPosition/vtplib/include/vtp_system.h"
+#include "Types.h"
 
 #define VIVE_STR "VIVE Tracker"
 
@@ -19,6 +20,7 @@ namespace Reco3D
         Eigen::Matrix4d vtpPoseToEigenMatrix4d(vtp::Pose_t& pose);
         Eigen::Vector3d GetTrackerPosition(TrackerId& deviceId);
         Eigen::Matrix3d GetTrackerRotation(TrackerId& deviceId);
+        ImageQuaternion GetTrackerQuaternion(TrackerId& deviceId);
         vtp::Pose_t GetPose(TrackerId& deviceId);
         void testVTPLibInterface();
     };

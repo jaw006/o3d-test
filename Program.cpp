@@ -41,14 +41,35 @@ bool Reco3D::LoadPlyPoseToPointCloud(std::string& sourcePath,  const std::string
     return false;
 }
 
+void Reco3D::Program::ExportAllPoints()
+{
+    std::time_t result = std::time(nullptr);
+    std::string file_prefix = std::to_string(result) + "_";
+    uint64_t captureNum = 0;
+    auto pointsVector = captureSet_->GetPointsVector();
+    for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+    {
+        std::string filename = file_prefix + std::to_string(captureNum);
+        auto capture = (*pointIt)->GetCapture();
+        auto points = (*pointIt)->GetPoints();
+        converter_->ExportCapture(filename, points, capture);
+        captureNum++;
+    }
+}
+
 void Reco3D::Program::Run()
 {
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool capture_frame = false;
+    bool capture_frame = false; // Should be false on startup
     bool clear = false;
     bool update_render = false;
+
+    // TRACKER VISUALIZATION 
+    Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
+    std::shared_ptr<o3d_TriMesh> origin = open3d::geometry::TriangleMesh::CreateCoordinateFrame(2.0);
+    std::shared_ptr<o3d_TriMesh> trackerMesh = open3d::geometry::TriangleMesh::CreateCoordinateFrame();
 
     // Input key callbacks
     vis_.RegisterKeyCallback(GLFW_KEY_ESCAPE,
@@ -62,9 +83,22 @@ void Reco3D::Program::Run()
 //            newSource = true;
             return false;
         });
+    vis_.RegisterKeyCallback(GLFW_KEY_E,
+        [&](visualization::Visualizer* vis) {
+            ExportAllPoints();
+//            newSource = true;
+            return false;
+        });
     vis_.RegisterKeyCallback(GLFW_KEY_C,
         [&](visualization::Visualizer* vis) {
-            clear = true;
+//            clear = true;
+            captureSet_->Clear();
+            vis->ClearGeometries();
+            // Add coord system
+            vis_.AddGeometry(trackerMesh);
+            vis_.AddGeometry(origin);
+            vis_.UpdateGeometry();
+            vis->UpdateRender();
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_W,
@@ -75,7 +109,7 @@ void Reco3D::Program::Run()
 
     // Show backfaces
     vis_.GetRenderOption().ToggleMeshShowBackFace();
-    vis_.GetRenderOption().ToggleMeshShowWireframe();
+//    vis_.GetRenderOption().ToggleMeshShowWireframe();
 
     const std::string sourceFilename = "source";
     const std::string targetFilename = "target";
@@ -91,128 +125,67 @@ void Reco3D::Program::Run()
 //    Reco3D::PointCloud target;
 //    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
 //    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
+//    open3d::visualization::glsl::CoordinateFrameRenderer coords;
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
+
+    vis_.AddGeometry(trackerMesh);
+    vis_.AddGeometry(origin);
+
     do {
-        // Doing this every frame is very taxing on CPU
-//        auto im_rgbd = sensor_->CaptureFrame();
-//        if (im_rgbd == nullptr) {
-//            utility::LogInfo("Invalid capture, skipping this frame");
-//            continue;
-//        }
-
-// // -----------------------------------------------------------------
-// // CAPTURE SOURCE
-// // -----------------------------------------------------------------
-//         // Set source image/pose
-//         if (!is_geometry_added || capture_source) {
-//             AddSourcePointCloud(source, vis_);
-// 
-//             // Flag for update
-//             is_geometry_added = true;
-//             update_render = true;
-//             capture_source = false;
-// //            if (clear)
-// //            {
-// //                vis.ClearGeometries();
-// //                utility::LogInfo("Clearing geometry.");
-// //                if (is_geometry_added)
-// //                {
-// //                    vis.AddGeometry(pts);
-// //                }
-// //                clear = false;
-// //                vis.UpdateRender();
-// //                continue;
-// //            }
-//         } // End Source
-// 
-// 
-//         if (!is_target_added || capture_target) {
-// //            target.points_->VoxelDownSample(VOXEL_SIZE);
-//             utility::LogInfo("Updating target.");
-//             target.SetPose(Reco3D::ImagePose(source.GetPose().inverse() * target.GetPose())); // Put target relative to source
-//             // -----------------------------------------------------------------
-//             // REGISTRATION  (TODO: Refactor registration)
-//             // -----------------------------------------------------------------
-// 
-//              auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-//              auto criteria = open3d::registration::ICPConvergenceCriteria();
-//              double max_correspondence_distance = 0.5;
-//              criteria.max_iteration_ = 30;
-//              auto reg_result = registration::RegistrationICP(
-//                  *source.GetPoints(),
-//                  *target.GetPoints(),
-//                  max_correspondence_distance,
-//                  target.GetPose(),
-//                  estimation,
-//                  criteria
-//              );
-//             // Print fitness, RMSE
-//             double& fitness = reg_result.fitness_; 
-//             double& rmse = reg_result.inlier_rmse_;
-//             std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-//             std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-//             std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-//             utility::LogInfo(log1.c_str());
-//             utility::LogInfo(log2.c_str());
-//             target.GetPoints()->Transform(reg_result.transformation_);
-// 
-//             // -----------------------------------------------------------------
-//             // ADD ALIGNED POINT CLOUDS 
-//             // -----------------------------------------------------------------
-// //            vis_.AddGeometry(target.GetPoints());
-// 
-// 
-//             // -----------------------------------------------------------------
-//             // MESH THE COMBINED POINTS
-//             // -----------------------------------------------------------------
-//             PointsToMesh ptsToMesh_;
-//             PointsVector ptsVector_;
-//             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(source));
-//             ptsVector_.AddPoints(std::make_shared<Reco3D::PointCloud>(target));
-//             auto mesh = ptsToMesh_.ToMesh(std::make_shared<Reco3D::PointsVector>(ptsVector_));
-//             vis_.AddGeometry(mesh);
-// 
-//             // Flag for update
-//             capture_target = false;
-//             update_render = true;
-//             is_target_added = true;
-//         } // End target
-
 // -----------------------------------------------------------------
 // New simpler main loop 
 // -----------------------------------------------------------------
         if (capture_frame)
         {
-            capture_frame = false;
+            if (!sensor_)
+            {
+                return;
+            }
             std::cout << "Capturing frame!" << std::endl;
             auto im_rgbd = sensor_->CaptureFrame();
-            if (im_rgbd != nullptr) {
+            if (im_rgbd == nullptr) {
+                utility::LogInfo("Invalid capture, skipping this frame");
+                continue;
+            }
+            else {
+                capture_frame = false;
                 update_render = true;
                 captureSet_->AddCapture(im_rgbd);
-                // Add geometry pointer if not done before
-//                if (!is_geometry_added)
-//                {
-                vis_.ClearGeometries();
-                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
-                    is_geometry_added = true;
-//                }
+              // Add geometry pointer if not done before
+                auto pointsVector = captureSet_->GetPointsVector();
+                for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+                {
+                    vis_.AddGeometry((*pointIt)->GetPoints());
+                }
+//                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
+                is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
-            }
-            else
-            {
-                utility::LogInfo("Invalid capture, skipping this frame");
+
             }
         }
+
+        // TRACKER POSE
+//        Eigen::Matrix4d trackerPose = sensor_->GetTrackerPose();
+//        std::cout << trackerPose << std::endl;
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
         if (update_render)
         {
             std::cout << "Updating geometry!" << std::endl;
-            vis_.UpdateGeometry();
+            if (is_geometry_added)
+            {
+//                vis_.UpdateGeometry(captureSet_->GetCombinedTriangleMesh());
+                vis_.UpdateGeometry();
+            }
             update_render = false;
         }
+        // Update tracker
+        trackerMesh->Transform(trackerPose.inverse());
+        trackerPose = sensor_->GetTrackerPose();
+        trackerMesh->Transform(trackerPose);
+        vis_.UpdateGeometry();
         vis_.PollEvents();
         vis_.UpdateRender();
     } while (!flag_exit);

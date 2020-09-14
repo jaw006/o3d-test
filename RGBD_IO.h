@@ -1,5 +1,7 @@
 #pragma once
+#define _USE_MATH_DEFINES
 #include <memory>
+#include <math.h>
 #include <Open3D/Open3D.h>
 #include <k4a/k4a.h>
 #include "VTPLibInterface.h"
@@ -48,6 +50,7 @@ namespace Reco3D
 			RGBDSensor_KinectVive(RGBDSensor_Config_KinectVive config);
 			~RGBDSensor_KinectVive();
 			std::shared_ptr<RGBDCapture_t> CaptureFrame() override;
+			ImagePose GetTrackerPose();
 		protected:
 			RGBDSensor_Config_KinectVive config_;
 			std::unique_ptr<open3d::io::AzureKinectSensor> sensor_;

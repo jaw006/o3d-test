@@ -20,7 +20,6 @@ namespace Reco3D
 
         std::shared_ptr<o3d_PointCloud> combinedPoints_;
         std::shared_ptr<o3d_TriMesh>    combinedMesh_;
-
         std::shared_ptr<PointsVector>   pointsVector_;
 
         std::shared_ptr<PointCloud> GetSourcePointCloud();
@@ -33,6 +32,7 @@ namespace Reco3D
         void Clear();
         size_t Count();
         std::shared_ptr<PointCloud> GetCombinedPointCloud();
+        const std::vector<std::shared_ptr<Reco3D::PointCloud>>& GetPointsVector();
         std::shared_ptr<o3d_TriMesh> GetCombinedTriangleMesh();
     };
 }
