@@ -24,9 +24,8 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
     auto new_img = MakeNewRGBDImage(capture->image_);
 
 //    auto extrinsic = capture->pose_.inverse(); // maps camera pose to world coords // this works for position
-    Eigen::Matrix4d poseInv = capture->pose_.inverse();
-    Eigen::Matrix4d newPose = poseInv;
-    auto extrinsic = newPose; // maps camera pose to world coords
+//    Eigen::Matrix4d poseInv = capture->pose_;
+    auto extrinsic = Eigen::Matrix4d::Identity(); // maps camera pose to world coords
     auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic,extrinsic);
     std::shared_ptr<Reco3D::PointCloud> cloud = std::make_shared<Reco3D::PointCloud>(img, capture);
     return cloud;

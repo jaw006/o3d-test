@@ -66,6 +66,11 @@ void Reco3D::Program::Run()
     bool clear = false;
     bool update_render = false;
 
+    // TRACKER VISUALIZATION 
+    Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
+    std::shared_ptr<o3d_TriMesh> origin = open3d::geometry::TriangleMesh::CreateCoordinateFrame(2.0);
+    std::shared_ptr<o3d_TriMesh> trackerMesh = open3d::geometry::TriangleMesh::CreateCoordinateFrame();
+
     // Input key callbacks
     vis_.RegisterKeyCallback(GLFW_KEY_ESCAPE,
         [&](visualization::Visualizer* vis) {
@@ -90,7 +95,8 @@ void Reco3D::Program::Run()
             captureSet_->Clear();
             vis->ClearGeometries();
             // Add coord system
-            vis_.AddGeometry(open3d::geometry::TriangleMesh::CreateCoordinateFrame());
+            vis_.AddGeometry(trackerMesh);
+            vis_.AddGeometry(origin);
             vis_.UpdateGeometry();
             vis->UpdateRender();
             return false;
@@ -119,9 +125,12 @@ void Reco3D::Program::Run()
 //    Reco3D::PointCloud target;
 //    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
 //    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
-    open3d::visualization::glsl::CoordinateFrameRenderer coords;
+//    open3d::visualization::glsl::CoordinateFrameRenderer coords;
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
+
+    vis_.AddGeometry(trackerMesh);
+    vis_.AddGeometry(origin);
 
     do {
 // -----------------------------------------------------------------
@@ -152,6 +161,7 @@ void Reco3D::Program::Run()
 //                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
                 is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
+
             }
         }
 
@@ -171,6 +181,11 @@ void Reco3D::Program::Run()
             }
             update_render = false;
         }
+        // Update tracker
+        trackerMesh->Transform(trackerPose);
+        trackerPose = sensor_->GetTrackerPose();
+        trackerMesh->Transform(trackerPose.inverse());
+        vis_.UpdateGeometry();
         vis_.PollEvents();
         vis_.UpdateRender();
     } while (!flag_exit);

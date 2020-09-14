@@ -149,6 +149,16 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
     std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
 
+
+    // // Transform points by rotating 180 on Z axis and -90 on Y axisE?
+    Eigen::Affine3d aff = Eigen::Affine3d::Identity();
+//    aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+//    Eigen::Matrix4d rotMat = aff.matrix();
+//    std::cout << "RotMat:\n" << rotMat << std::endl;
+//    points->GetPoints()->Transform(rotMat);
+
+    // Eigen::Matrix4d poseInv = capture->pose_.inverse();
+    // Eigen::Matrix4d newPose = poseInv * t.matrix();
 //    Eigen::Affine3d t;
     // Rotate -90 in Z axis
 //    t.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
@@ -159,11 +169,11 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //    std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
 //    Eigen::Matrix4d transformationMat = inversePosePositionMatrix * inversePoseRotation;
 
-//    points->GetPoints()->Translate(posePosition, false);
-    points->GetPoints()->Transform(pose.inverse());
-    points->GetPoints()->Rotate(quatRotation, Eigen::Vector3d(0.0, 0.0, 0.0));
-//    points->GetPoints()->Rotate(quatRotation, points->GetPoints()->GetCenter());
+    // This was being done before
+//    points->GetPoints()->Transform(pose.inverse());
+//    points->GetPoints()->Rotate(quatRotation, Eigen::Vector3d(0.0, 0.0, 0.0));
 
+//    points->GetPoints()->Rotate(quatRotation, points->GetPoints()->GetCenter());
 //    points->GetPoints()->PaintUniformColor(Eigen::Vector3d(0.0, 1.0, 0.0));
     pointsVector_.push_back(points);
 

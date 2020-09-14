@@ -51,29 +51,28 @@ Eigen::Matrix4d Reco3D::VTPLibInterface::vtpPoseToEigenMatrix4d(vtp::Pose_t& pos
 {
     vtp::Vector3_t& pos = pose.Position;
     vtp::Matrix3_t& rot = pose.Rotation;
-    Eigen::Matrix4d m;
-//    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-    //Copy rotation
-//    for (int x = 0; x < 3; x++)
-//        for (int y = 0; y < 3; y++)
-//            m(x, y) = (double)rot.m[x][y];
+    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+
+    // Rotation Matrix 
     m(0,0) = (double)rot.m[0][0];
-    m(0,1) = (double)rot.m[1][0];
-    m(0,2) = (double)rot.m[2][0];
-    m(0,3) = (double)pos.v[0];
-    m(1,0) = (double)rot.m[0][1];
+    m(0,1) = (double)rot.m[0][1];
+    m(0,2) = (double)rot.m[0][2];
+    m(1,0) = (double)rot.m[1][0];
     m(1,1) = (double)rot.m[1][1];
-    m(1,2) = (double)rot.m[2][1];
-    m(1,3) = (double)pos.v[1];
-    m(2,0) = (double)rot.m[0][2];
-    m(2,1) = (double)rot.m[1][2];
+    m(1,2) = (double)rot.m[1][2];
+    m(2,0) = (double)rot.m[2][0];
+    m(2,1) = (double)rot.m[2][1];
     m(2,2) = (double)rot.m[2][2];
+    // Position Vector
+    m(0,3) = (double)pos.v[0];
+    m(1,3) = (double)pos.v[1];
     m(2,3) = (double)pos.v[2];
-    // Copy position
+    // Affine
     m(3, 0) = 0.0;
     m(3, 1) = 0.0;
     m(3, 2) = 0.0;
     m(3, 3) = 1.0;
+
     return m;
 }
 

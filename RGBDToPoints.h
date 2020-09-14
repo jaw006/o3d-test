@@ -1,8 +1,11 @@
 #pragma once
 
+#define _USE_MATH_DEFINES
+
 #include <Open3D/Open3D.h>
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include "RGBD_IO.h"
 #include "PointCloud.h"
 #include "Types.h"
