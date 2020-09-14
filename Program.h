@@ -17,7 +17,8 @@
 #include "VTPLibInterface.h"
 #include "Open3D/Visualization/Utility/GLHelper.h"
 #include "Types.h"
-#include "Program.h"
+#include "PointsToMesh.h"
+#include "RGBDCaptureSet.h"
 
 
 namespace Reco3D
@@ -25,14 +26,17 @@ namespace Reco3D
     class Program
     {
     private:
+        // Why does RGBDCaptureSet have a PointsVector? 
         Reco3D::IO::RGBDSensor_KinectVive*        sensor_;
         Reco3D::IO::RGBDSensor_Config_KinectVive* sensorConfig_;
         Reco3D::RGBDToPoints*                     converter_;
+        Reco3D::RGBDCaptureSet*                   captureSet_;
         open3d::visualization::VisualizerWithKeyCallback& vis_;
 
     public:
         Program(open3d::visualization::VisualizerWithKeyCallback& vis);
         ~Program();
+        void ExportAllPoints();
         void Run();
 
         // Helper methods

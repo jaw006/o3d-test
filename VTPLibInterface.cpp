@@ -35,7 +35,7 @@ Eigen::Matrix4d Reco3D::VTPLibInterface::GetTrackerMatrix4d(TrackerId& deviceId)
     auto device = system_->GetDevice(deviceId);
     if (device.IsValid() && device.GetDeviceClass() != vtp::DeviceClass::Invalid)
     {
-        vtp::Pose_t& pose = device.GetPose();
+        vtp::Pose_t& pose = device.GetPose();    
 //        //DEBUG
 //        std::cout << "Pose.Position=" << pose.Position.toString() << std::endl;
 //        std::cout << "Pose.Rotation=" << std::endl << pose.Rotation.toString() << std::endl;
@@ -51,29 +51,28 @@ Eigen::Matrix4d Reco3D::VTPLibInterface::vtpPoseToEigenMatrix4d(vtp::Pose_t& pos
 {
     vtp::Vector3_t& pos = pose.Position;
     vtp::Matrix3_t& rot = pose.Rotation;
-    Eigen::Matrix4d m;
-//    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-    //Copy rotation
-//    for (int x = 0; x < 3; x++)
-//        for (int y = 0; y < 3; y++)
-//            m(x, y) = (double)rot.m[x][y];
+    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+
+    // Rotation Matrix 
     m(0,0) = (double)rot.m[0][0];
-    m(0,1) = (double)rot.m[1][0];
-    m(0,2) = (double)rot.m[2][0];
-    m(0,3) = (double)pos.v[0];
-    m(1,0) = (double)rot.m[0][1];
+    m(0,1) = (double)rot.m[0][1];
+    m(0,2) = (double)rot.m[0][2];
+    m(1,0) = (double)rot.m[1][0];
     m(1,1) = (double)rot.m[1][1];
-    m(1,2) = (double)rot.m[2][1];
-    m(1,3) = (double)pos.v[1];
-    m(2,0) = (double)rot.m[0][2];
-    m(2,1) = (double)rot.m[1][2];
+    m(1,2) = (double)rot.m[1][2];
+    m(2,0) = (double)rot.m[2][0];
+    m(2,1) = (double)rot.m[2][1];
     m(2,2) = (double)rot.m[2][2];
+    // Position Vector
+    m(0,3) = (double)pos.v[0];
+    m(1,3) = (double)pos.v[1];
     m(2,3) = (double)pos.v[2];
-    // Copy position
+    // Affine
     m(3, 0) = 0.0;
     m(3, 1) = 0.0;
     m(3, 2) = 0.0;
     m(3, 3) = 1.0;
+
     return m;
 }
 
@@ -110,6 +109,14 @@ Eigen::Matrix3d Reco3D::VTPLibInterface::GetTrackerRotation(TrackerId& deviceId)
     m << r.m[2][1]; 
     m << r.m[2][2];
     return m;
+}
+
+Reco3D::ImageQuaternion Reco3D::VTPLibInterface::GetTrackerQuaternion(TrackerId& deviceId)
+{
+    auto q = GetPose(deviceId).Quaternion;
+    Eigen::Vector4d quat;
+    quat << q.w, q.x, q.y, q.z;
+    return quat;
 }
 
 void Reco3D::VTPLibInterface::testVTPLibInterface()

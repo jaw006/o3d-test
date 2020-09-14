@@ -31,9 +31,28 @@ std::shared_ptr<Reco3D::RGBDCapture_t> Reco3D::IO::RGBDSensor_KinectVive::Captur
     // Get tracker matrix 
     if (vtpInterface_)
     {
-        capture->pose_ = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
+//        capture->pose_ = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
+        capture->pose_ = GetTrackerPose();
+        capture->quat_ = vtpInterface_->GetTrackerQuaternion(currentTrackerIndex_);
     }
     return capture;
+}
+
+Reco3D::ImagePose Reco3D::IO::RGBDSensor_KinectVive::GetTrackerPose()
+{
+    if (vtpInterface_)
+    {
+        Reco3D::ImagePose pose = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
+        // Transformation from Tracker to Camera coords
+        Eigen::Affine3d aff = Eigen::Affine3d::Identity();
+        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+        aff.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX()));
+//        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+        pose *= aff.matrix();
+        return pose;
+    }
+
+    return ImagePose();
 }
 
 bool Reco3D::IO::RGBDSensor_KinectVive::InitializeAzureKinect()
@@ -59,23 +78,39 @@ bool Reco3D::IO::RGBDSensor_KinectVive::InitializeVTPLib()
     }
     else
     {
-        std::cout << "Found devices with ids:(";
+        std::cout << "Found devices with ids: ";
         for(auto id : ids)
         {
             std::cout << id << " ";
         }
         std::cout << std::endl;
-        // If preferredTrackerId returns identity matrix, use the first other tracker found for position
-        if (!vtpInterface_->GetTrackerMatrix4d(config_.trackerIndex_).isIdentity())
+        currentTrackerIndex_ = ids[0];
+        bool id_set = false;
+        for(auto id : ids)
         {
-            currentTrackerIndex_ = config_.trackerIndex_;
+            if (!id_set && !vtpInterface_->GetTrackerMatrix4d(id).isIdentity())
+            {
+                currentTrackerIndex_ = id;
+                id_set = true;
+            }
         }
-        else
-        {
-            currentTrackerIndex_ = ids[0];
-        }
+//        // If preferredTrackerId returns identity matrix, use the first other tracker found for position
+//        if (!vtpInterface_->GetTrackerMatrix4d(config_.trackerIndex_).isIdentity())
+//        {
+//            currentTrackerIndex_ = config_.trackerIndex_;
+//        }
+//        else
+//        {
+//            currentTrackerIndex_ = ids[0];
+//        }
     }
-    std::cout << "Using tracker id# " << currentTrackerIndex_ << "for pose" << std::endl;
+    std::cout << "Using tracker id# " << currentTrackerIndex_ << " for pose" << std::endl;
+    if (currentTrackerIndex_ == 0)
+    {
+        std::cout << "WARNING USING HMD FOR POSE" << std::endl;
+        std::cout << "WARNING USING HMD FOR POSE" << std::endl;
+        std::cout << "WARNING USING HMD FOR POSE" << std::endl;
+    }
     return true;
 }
 

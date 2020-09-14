@@ -5,6 +5,7 @@ using namespace open3d;
 Reco3D::Program::Program(open3d::visualization::VisualizerWithKeyCallback& vis) :
     sensorConfig_(new Reco3D::IO::RGBDSensor_Config_KinectVive()),
     converter_(new Reco3D::RGBDToPoints()),
+    captureSet_(new Reco3D::RGBDCaptureSet()),
     vis_(vis)
 {
     sensor_ = new Reco3D::IO::RGBDSensor_KinectVive(*sensorConfig_);
@@ -18,6 +19,8 @@ Reco3D::Program::~Program()
     sensor_ = nullptr;
     delete converter_;
     converter_ = nullptr;
+    delete captureSet_;
+    captureSet_ = nullptr;
 }
 
 // sourcePath: path to file, without filename
@@ -38,18 +41,35 @@ bool Reco3D::LoadPlyPoseToPointCloud(std::string& sourcePath,  const std::string
     return false;
 }
 
+void Reco3D::Program::ExportAllPoints()
+{
+    std::time_t result = std::time(nullptr);
+    std::string file_prefix = std::to_string(result) + "_";
+    uint64_t captureNum = 0;
+    auto pointsVector = captureSet_->GetPointsVector();
+    for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+    {
+        std::string filename = file_prefix + std::to_string(captureNum);
+        auto capture = (*pointIt)->GetCapture();
+        auto points = (*pointIt)->GetPoints();
+        converter_->ExportCapture(filename, points, capture);
+        captureNum++;
+    }
+}
+
 void Reco3D::Program::Run()
 {
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool is_target_added = false;
-    bool capture_source = false;
-    bool capture_target = false;
-    bool newSource = true;
-    bool newTarget = true;
+    bool capture_frame = false; // Should be false on startup
     bool clear = false;
     bool update_render = false;
+
+    // TRACKER VISUALIZATION 
+    Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
+    std::shared_ptr<o3d_TriMesh> origin = open3d::geometry::TriangleMesh::CreateCoordinateFrame(2.0);
+    std::shared_ptr<o3d_TriMesh> trackerMesh = open3d::geometry::TriangleMesh::CreateCoordinateFrame();
 
     // Input key callbacks
     vis_.RegisterKeyCallback(GLFW_KEY_ESCAPE,
@@ -59,21 +79,37 @@ void Reco3D::Program::Run()
         });
     vis_.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
-            capture_source = true;
-            newSource = true;
+            capture_frame = true;
+//            newSource = true;
             return false;
         });
-    vis_.RegisterKeyCallback(GLFW_KEY_T,
+    vis_.RegisterKeyCallback(GLFW_KEY_E,
         [&](visualization::Visualizer* vis) {
-            capture_target = true;
-            newTarget = true;
+            ExportAllPoints();
+//            newSource = true;
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_C,
         [&](visualization::Visualizer* vis) {
-            clear = true;
+//            clear = true;
+            captureSet_->Clear();
+            vis->ClearGeometries();
+            // Add coord system
+            vis_.AddGeometry(trackerMesh);
+            vis_.AddGeometry(origin);
+            vis_.UpdateGeometry();
+            vis->UpdateRender();
             return false;
         });
+    vis_.RegisterKeyCallback(GLFW_KEY_W,
+        [&](visualization::Visualizer* vis) {
+            vis->GetRenderOption().ToggleMeshShowWireframe();
+            return false;
+        });
+
+    // Show backfaces
+    vis_.GetRenderOption().ToggleMeshShowBackFace();
+//    vis_.GetRenderOption().ToggleMeshShowWireframe();
 
     const std::string sourceFilename = "source";
     const std::string targetFilename = "target";
@@ -84,91 +120,72 @@ void Reco3D::Program::Run()
     std::string sourcePath = folder + delim + sourceFilename + extension;
     std::string targetPath = folder + delim + targetFilename + extension;
 
-    // Read existing files
-    Reco3D::PointCloud source;
-    Reco3D::PointCloud target;
-    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
-    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
+//    // Read existing files
+//    Reco3D::PointCloud source;
+//    Reco3D::PointCloud target;
+//    LoadPlyPoseToPointCloud(dataPath, sourceFilename, source);
+//    LoadPlyPoseToPointCloud(dataPath, targetFilename, target);
+//    open3d::visualization::glsl::CoordinateFrameRenderer coords;
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
+
+    vis_.AddGeometry(trackerMesh);
+    vis_.AddGeometry(origin);
+
     do {
-        // Doing this every frame is very taxing on CPU
-        auto im_rgbd = sensor_->CaptureFrame();
-        if (im_rgbd == nullptr) {
-            utility::LogInfo("Invalid capture, skipping this frame");
-            continue;
+// -----------------------------------------------------------------
+// New simpler main loop 
+// -----------------------------------------------------------------
+        if (capture_frame)
+        {
+            if (!sensor_)
+            {
+                return;
+            }
+            std::cout << "Capturing frame!" << std::endl;
+            auto im_rgbd = sensor_->CaptureFrame();
+            if (im_rgbd == nullptr) {
+                utility::LogInfo("Invalid capture, skipping this frame");
+                continue;
+            }
+            else {
+                capture_frame = false;
+                update_render = true;
+                captureSet_->AddCapture(im_rgbd);
+              // Add geometry pointer if not done before
+                auto pointsVector = captureSet_->GetPointsVector();
+                for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+                {
+                    vis_.AddGeometry((*pointIt)->GetPoints());
+                }
+//                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
+                is_geometry_added = true;
+                std::cout << "Done!" << std::endl;
+
+            }
         }
 
-// -----------------------------------------------------------------
-// CAPTURE SOURCE
-// -----------------------------------------------------------------
-        // Set source image/pose
-        if (!is_geometry_added || capture_source) {
-            AddSourcePointCloud(source, vis_);
-            is_geometry_added = true;
-            capture_source = false;
-            update_render = true;
-//            if (clear)
-//            {
-//                vis.ClearGeometries();
-//                utility::LogInfo("Clearing geometry.");
-//                if (is_geometry_added)
-//                {
-//                    vis.AddGeometry(pts);
-//                }
-//                clear = false;
-//                vis.UpdateRender();
-//                continue;
-//            }
-        } // End Source
-
-
-        if (!is_target_added || capture_target) {
-//            target.points_->VoxelDownSample(VOXEL_SIZE);
-            utility::LogInfo("Updating target.");
-            target.SetPose(Reco3D::ImagePose(source.GetPose().inverse() * target.GetPose())); // Put target relative to source
-            // -----------------------------------------------------------------
-            // REGISTRATION  (TODO: Refactor registration)
-            // -----------------------------------------------------------------
-             auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-             auto criteria = open3d::registration::ICPConvergenceCriteria();
-             double max_correspondence_distance = 0.5;
-             criteria.max_iteration_ = 30;
-             auto reg_result = registration::RegistrationICP(
-                 *source.GetPoints(),
-                 *target.GetPoints(),
-                 max_correspondence_distance,
-                 target.GetPose(),
-                 estimation,
-                 criteria
-             );
-            // Print fitness, RMSE
-            double& fitness = reg_result.fitness_; 
-            double& rmse = reg_result.inlier_rmse_;
-            std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-            std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-            std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-            utility::LogInfo(log1.c_str());
-            utility::LogInfo(log2.c_str());
-            target.GetPoints()->Transform(reg_result.transformation_);
-            capture_target = false;
-            // -----------------------------------------------------------------
-            // ADD ALIGNED POINT CLOUDS 
-            // -----------------------------------------------------------------
-            vis_.AddGeometry(target.GetPoints());
-            update_render = true;
-            is_target_added = true;
-        } // End target
-
+        // TRACKER POSE
+//        Eigen::Matrix4d trackerPose = sensor_->GetTrackerPose();
+//        std::cout << trackerPose << std::endl;
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
         if (update_render)
         {
-            vis_.UpdateGeometry();
+            std::cout << "Updating geometry!" << std::endl;
+            if (is_geometry_added)
+            {
+//                vis_.UpdateGeometry(captureSet_->GetCombinedTriangleMesh());
+                vis_.UpdateGeometry();
+            }
             update_render = false;
         }
-
+        // Update tracker
+        trackerMesh->Transform(trackerPose.inverse());
+        trackerPose = sensor_->GetTrackerPose();
+        trackerMesh->Transform(trackerPose);
+        vis_.UpdateGeometry();
         vis_.PollEvents();
         vis_.UpdateRender();
     } while (!flag_exit);
@@ -187,5 +204,5 @@ void Reco3D::Program::AddSourcePointCloud(Reco3D::PointCloud& source, open3d::vi
 
     utility::LogInfo("Updating geo.");
 
-    vis.AddGeometry(source.GetPoints());
+//    vis.AddGeometry(source.GetPoints());
 }
