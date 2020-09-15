@@ -57,12 +57,21 @@ void Reco3D::Program::ExportAllPoints()
     }
 }
 
+void Reco3D::Program::AddTrackerOriginMeshes(const std::shared_ptr<open3d::geometry::TriangleMesh>& trackerMesh, const std::shared_ptr<open3d::geometry::TriangleMesh>& origin)
+{
+    vis_.AddGeometry(trackerMesh);
+    vis_.AddGeometry(origin);
+    vis_.UpdateGeometry();
+    vis_.UpdateRender();
+}
+
 void Reco3D::Program::Run()
 {
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool capture_frame = false; // Should be false on startup
+    bool capture_frame = false;      // Should be false on startup
+    bool make_triangle_mesh = false; // Whether to turn cloud into mesh
     bool clear = false;
     bool update_render = false;
     bool show_tracker = true;
@@ -84,6 +93,11 @@ void Reco3D::Program::Run()
 //            newSource = true;
             return false;
         });
+    vis_.RegisterKeyCallback(GLFW_KEY_M,
+        [&](visualization::Visualizer* vis) {
+            make_triangle_mesh = !make_triangle_mesh;
+            return false;
+        });
     vis_.RegisterKeyCallback(GLFW_KEY_E,
         [&](visualization::Visualizer* vis) {
             ExportAllPoints();
@@ -95,11 +109,7 @@ void Reco3D::Program::Run()
 //            clear = true;
             captureSet_->Clear();
             vis->ClearGeometries();
-            // Add coord system
-            vis_.AddGeometry(trackerMesh);
-            vis_.AddGeometry(origin);
-            vis_.UpdateGeometry();
-            vis->UpdateRender();
+            AddTrackerOriginMeshes(trackerMesh, origin);
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_W,
@@ -158,18 +168,24 @@ void Reco3D::Program::Run()
                 capture_frame = false;
                 update_render = true;
                 captureSet_->AddCapture(im_rgbd);
-                // Add combined point cloud
+
+                // Add point cloud or triangle mesh
+                if(!make_triangle_mesh)
                 {
+                    std::cout << "Adding point cloud!" << std::endl;
                     auto pointsVector = captureSet_->GetPointsVector();
-                    for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+                    // Add last created point cloud
+                    vis_.AddGeometry((pointsVector.back())->GetPoints());
+                }
+                else
+                {
                     {
-                        vis_.AddGeometry((*pointIt)->GetPoints());
+                        std::cout << "Adding triangle mesh!" << std::endl;
+                        vis_.ClearGeometries();
+                        AddTrackerOriginMeshes(trackerMesh, origin);
+                        vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
                     }
                 }
-//                // Add mesh
-//                {
-//                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
-//                }
                 is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
 
@@ -208,6 +224,7 @@ void Reco3D::Program::Run()
   // EXIT CLEANUP
   // -----------------------------------------------------------------
 }
+
 
 // TODO Refactor this
 void Reco3D::Program::AddSourcePointCloud(Reco3D::PointCloud& source, open3d::visualization::VisualizerWithKeyCallback& vis)

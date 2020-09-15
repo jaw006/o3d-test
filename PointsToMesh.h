@@ -9,6 +9,8 @@
 #include "Types.h"
 #include "PointCloud.h"
 
+#define DOWNSAMPLE_VOXEL_SIZE 0.02
+
 namespace Reco3D {
     // Vector of multiple points objects
     // Used for combining multiple points objects

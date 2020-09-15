@@ -19,7 +19,8 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     Reco3D::o3d_PointCloud cloud = *pointsVector->GetCombinedPoints()->GetPoints();
 
     // Downsample before calculating normals
-    cloud = *cloud.UniformDownSample(2);
+//    cloud = *cloud.UniformDownSample(2);
+    cloud = *cloud.VoxelDownSample(DOWNSAMPLE_VOXEL_SIZE);
     
     // Point cloud must have normals to mesh
     if (!cloud.HasNormals())
@@ -27,14 +28,46 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
         bool normalsGenerated = cloud.EstimateNormals();
     }
 
+//    // Mesh reconstruction - Ball Pivoting
+//    const std::vector<double> radii{ 0.01, 0.02, 0.04 };
+//    std::shared_ptr<open3d::geometry::TriangleMesh> output(open3d::geometry::TriangleMesh::CreateFromPointCloudBallPivoting(cloud, radii));
+
 //    // Mesh with default parameters - Poisson reconstruction
     // 12 is good
     // 8 is faster
-    uint64_t depth = 12;
-   std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
-       open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
+    uint64_t depth = 16;
+    std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
+             open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
+    std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
+    std::vector<double> densities = std::get<std::vector<double>>(tuple_result);
 
-   std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
+    // Remove vertices created that fall below 0.01 quantile
+    // http://www.open3d.org/docs/release/tutorial/Advanced/surface_reconstruction.html
+    // https://www.statisticshowto.com/quantile-definition-find-easy-steps/
+    std::vector<double> densities_sorted = densities;
+    std::sort(densities_sorted.begin(), densities_sorted.end());
+    double quantile = 0.01;
+    int index = (int) std::floor(quantile * (densities_sorted.size() + 1));
+    double threshold = densities_sorted.at(index);
+
+    // Add indices of vertices to remove to this vector
+    std::vector<size_t> indices_to_remove;
+    for (size_t index = 0; index < densities.size(); index++)
+    {
+        if (densities.at(index) < threshold)
+        {
+            indices_to_remove.push_back(index);
+        }
+    }
+    std::cout << "Removing " << indices_to_remove.size() << " vertices!" << std::endl;
+    output->RemoveVerticesByIndex(indices_to_remove);
+
+    // Decimate
+   size_t numTriangles = output->triangles_.size();
+   size_t decimationFactor = 10;
+   size_t numTrianglesDecimated = numTriangles / decimationFactor;
+   std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
+   output->SimplifyQuadricDecimation(numTrianglesDecimated);
 
 //   output->FilterSmoothSimple(2);
 
@@ -77,9 +110,8 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     if (points == nullptr)
          return false;
 
-    // Downsample before calculating normals
-    points->SetPoints(points->GetPoints()->UniformDownSample(2));
-//    points->SetPoints(points->GetPoints()->VoxelDownSample(0.01));
+    // Downsample before doing transfomrations
+    points->SetPoints(points->GetPoints()->VoxelDownSample(DOWNSAMPLE_VOXEL_SIZE));
 
 //    // Transform to shared coord system
     if (Count() == 0)
