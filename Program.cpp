@@ -65,6 +65,7 @@ void Reco3D::Program::Run()
     bool capture_frame = false; // Should be false on startup
     bool clear = false;
     bool update_render = false;
+    bool show_tracker = true;
 
     // TRACKER VISUALIZATION 
     Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
@@ -104,6 +105,11 @@ void Reco3D::Program::Run()
     vis_.RegisterKeyCallback(GLFW_KEY_W,
         [&](visualization::Visualizer* vis) {
             vis->GetRenderOption().ToggleMeshShowWireframe();
+            return false;
+        });
+    vis_.RegisterKeyCallback(GLFW_KEY_T,
+        [&](visualization::Visualizer* vis) {
+            show_tracker = !show_tracker;
             return false;
         });
 
@@ -152,13 +158,18 @@ void Reco3D::Program::Run()
                 capture_frame = false;
                 update_render = true;
                 captureSet_->AddCapture(im_rgbd);
-              // Add geometry pointer if not done before
-                auto pointsVector = captureSet_->GetPointsVector();
-                for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+                // Add combined point cloud
                 {
-                    vis_.AddGeometry((*pointIt)->GetPoints());
+                    auto pointsVector = captureSet_->GetPointsVector();
+                    for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+                    {
+                        vis_.AddGeometry((*pointIt)->GetPoints());
+                    }
                 }
-//                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
+//                // Add mesh
+//                {
+//                    vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+//                }
                 is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
 
@@ -182,9 +193,12 @@ void Reco3D::Program::Run()
             update_render = false;
         }
         // Update tracker
-        trackerMesh->Transform(trackerPose.inverse());
-        trackerPose = sensor_->GetTrackerPose();
-        trackerMesh->Transform(trackerPose);
+        if (show_tracker)
+        {
+            trackerMesh->Transform(trackerPose.inverse());
+            trackerPose = sensor_->GetTrackerPose();
+            trackerMesh->Transform(trackerPose);
+        }
         vis_.UpdateGeometry();
         vis_.PollEvents();
         vis_.UpdateRender();

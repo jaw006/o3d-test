@@ -29,7 +29,8 @@ namespace Reco3D {
         std::shared_ptr<Reco3D::PointCloud> GetCombinedPoints();
         const std::vector<std::shared_ptr<Reco3D::PointCloud>>& GetPointsVector() { return pointsVector_; };
         std::shared_ptr<Reco3D::PointCloud> GetSourcePointCloud();
-        open3d::registration::RegistrationResult RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, std::shared_ptr<Reco3D::PointCloud> target);
+        open3d::registration::RegistrationResult RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, std::shared_ptr<Reco3D::PointCloud> target, Reco3D::ImagePose& target_pose);
+//        open3d::registration::RegistrationResult RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, std::shared_ptr<Reco3D::PointCloud> target);
 
     };
 

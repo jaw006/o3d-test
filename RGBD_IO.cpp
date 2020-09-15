@@ -72,6 +72,7 @@ bool Reco3D::IO::RGBDSensor_KinectVive::InitializeVTPLib()
 
     auto ids = vtpInterface_->GetTrackerIds();
     if (ids.empty())
+//        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
     {
         std::cout << "Error: No VIVE Trackers found!";
         return false;

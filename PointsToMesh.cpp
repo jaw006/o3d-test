@@ -19,7 +19,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     Reco3D::o3d_PointCloud cloud = *pointsVector->GetCombinedPoints()->GetPoints();
 
     // Downsample before calculating normals
-    cloud.UniformDownSample(100.0);
+    cloud = *cloud.UniformDownSample(2);
     
     // Point cloud must have normals to mesh
     if (!cloud.HasNormals())
@@ -53,11 +53,11 @@ Reco3D::PointsVector::~PointsVector()
 std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 {
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
-//    for (auto points : pointsVector_)
-//    {
-//        *addedPts = *addedPts + *points->GetPoints();
-//    }
-//    combinedPoints_->SetPoints(addedPts);
+    for (auto points : pointsVector_)
+    {
+        *addedPts = *addedPts + *points->GetPoints();
+    }
+    combinedPoints_->SetPoints(addedPts);
 //    if (Count() > 0)
 //    {
 //        auto sourcePointCloud = pointsVector_.at(0);
@@ -78,7 +78,8 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
          return false;
 
     // Downsample before calculating normals
-    points->GetPoints()->UniformDownSample(1000.0);
+    points->SetPoints(points->GetPoints()->UniformDownSample(2));
+//    points->SetPoints(points->GetPoints()->VoxelDownSample(0.01));
 
 //    // Transform to shared coord system
     if (Count() == 0)
@@ -141,42 +142,27 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 ////    pointsCopy->GetPoints()->Transform(pose.inverse());
 //    pointsVector_.push_back(copyPts);
 
-    std::cout << "Pose:\n" << pose << std::endl;
-    std::cout << "Quaternion:\n" << quat << std::endl;
-    std::cout << "Quaternion.w:\n" << std::to_string(quat(0)) << std::endl;
-    std::cout << "QuaternionRotation:\n" << quatRotation << std::endl;
-    std::cout << "posePositionMatrix:\n" << posePositionMatrix << std::endl;
-    std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
-    std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
+//    std::cout << "Pose:\n" << pose << std::endl;
+//    std::cout << "Quaternion:\n" << quat << std::endl;
+//    std::cout << "Quaternion.w:\n" << std::to_string(quat(0)) << std::endl;
+//    std::cout << "QuaternionRotation:\n" << quatRotation << std::endl;
+//    std::cout << "posePositionMatrix:\n" << posePositionMatrix << std::endl;
+//    std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
+//    std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
 
 
     // // Transform points by rotating 180 on Z axis and -90 on Y axisE?
     Eigen::Affine3d aff = Eigen::Affine3d::Identity();
     aff.rotate(Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX()));
-//    Eigen::Matrix4d rotMat = aff.matrix();
-//    std::cout << "RotMat:\n" << rotMat << std::endl;
     points->GetPoints()->Transform(aff.matrix());
-
-    // Eigen::Matrix4d poseInv = capture->pose_.inverse();
-    // Eigen::Matrix4d newPose = poseInv * t.matrix();
-//    Eigen::Affine3d t;
-    // Rotate -90 in Z axis
-//    t.rotate(Eigen::AngleAxisd(M_PI / 4, Eigen::Vector3d::UnitZ()));
-//    points->GetPoints()->Transform(t.matrix());
-
-//    std::cout << "Inverse Pose:\n" << inverse << std::endl;
-//    std::cout << "InversePose * Pose:\n" << inverse*pose << std::endl;
-//    std::cout << "Pose * InversePose:\n" << pose*inverse << std::endl;
-//    Eigen::Matrix4d transformationMat = inversePosePositionMatrix * inversePoseRotation;
-
-    // This was being done before
-//    points->GetPoints()->Transform(pose.inverse());
     points->GetPoints()->Transform(posePositionMatrix);
     points->GetPoints()->Rotate(quatRotation, posePosition);
-//    points->GetPoints()->Transform(inversePosePositionMatrix);
-
-//    points->GetPoints()->Rotate(quatRotation, points->GetPoints()->GetCenter());
-//    points->GetPoints()->PaintUniformColor(Eigen::Vector3d(0.0, 1.0, 0.0));
+    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+//    if (Count() > 0)
+//    {
+//        auto reg_result = RegisterPoints(GetSourcePointCloud(), points, m);
+//        points->GetPoints()->Transform(reg_result.transformation_);
+//    }
     pointsVector_.push_back(points);
 
 //    std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
@@ -202,28 +188,29 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetSourcePointCloud()
     }
 }
 
-open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, std::shared_ptr<Reco3D::PointCloud> target)
+open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, 
+    std::shared_ptr<Reco3D::PointCloud> target, Reco3D::ImagePose& target_pose)
 {
 
-         auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
-         auto criteria = open3d::registration::ICPConvergenceCriteria();
-         double max_correspondence_distance = 10.0;
-         criteria.max_iteration_ = 30;
-         auto reg_result = open3d::registration::RegistrationICP(
-             *source->GetPoints(),
-             *target->GetPoints(),
-             max_correspondence_distance,
-             target->GetPose(),
-             estimation,
-             criteria
-         );
-        // Print fitness, RMSE
-        double& fitness = reg_result.fitness_; 
-        double& rmse = reg_result.inlier_rmse_;
-        std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-        std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-        std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-        open3d::utility::LogInfo(log1.c_str());
-        open3d::utility::LogInfo(log2.c_str());
-        return reg_result;
+     auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
+     auto criteria = open3d::registration::ICPConvergenceCriteria();
+     double max_correspondence_distance = 100.0;
+     criteria.max_iteration_ = 100;
+     auto reg_result = open3d::registration::RegistrationICP(
+         *source->GetPoints(),
+         *target->GetPoints(),
+         max_correspondence_distance,
+         target_pose,
+         estimation,
+         criteria
+     );
+    // Print fitness, RMSE
+    double& fitness = reg_result.fitness_; 
+    double& rmse = reg_result.inlier_rmse_;
+    std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+    std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+    std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+    open3d::utility::LogInfo(log1.c_str());
+    open3d::utility::LogInfo(log2.c_str());
+    return reg_result;
 }
