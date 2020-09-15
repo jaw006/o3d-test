@@ -65,7 +65,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Decimate
    size_t numTriangles = output->triangles_.size();
-   size_t decimationFactor = 10;
+   size_t decimationFactor = 2;
    size_t numTrianglesDecimated = numTriangles / decimationFactor;
    std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
    output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
@@ -78,7 +78,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
    // Color Mapping
 
    // Post processing
-//   output->FilterSmoothSimple(2);
+   output->FilterSmoothSimple(2);
 
     return output;
 }
@@ -177,7 +177,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
         {
             auto& target = *cloudIt;
             double notGoodRMSE = 0.2;
-            double goodEnoughRMSE = 0.05;
+            double goodEnoughRMSE = 0.025;
             double excellentRMSE = 0.01;
 
             auto existingRegResults = EvaluateCurrentRegistration(source, target, regMtx);
@@ -200,16 +200,15 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
             {
                 std::cout << "Transforming point cloud based on new reg results" << std::endl;
                 source->GetPoints()->Transform(newRegResult.transformation_);
-                transformMtx *= newRegResult.transformation_;
+                transformMtx = newRegResult.transformation_ * transformMtx;
                 transformationCount++;
-                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
+//                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
 //                regMtx *= newRegResult.transformation_;
             }
             else
             {
-                std::cout << "Using old registration results." << std::endl;
+                std::cout << "Discarding new registration results." << std::endl;
             }
-
             if (newRMSE < goodEnoughRMSE)
             {
                 transformed = true;

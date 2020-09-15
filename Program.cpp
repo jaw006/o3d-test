@@ -78,6 +78,7 @@ void Reco3D::Program::Run()
     bool clear = false;
     bool update_render = false;
     bool show_tracker = true;
+    bool update_camera = false;
 
     // TRACKER VISUALIZATION 
     Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
@@ -170,6 +171,7 @@ void Reco3D::Program::Run()
             else {
                 capture_frame = false;
                 update_render = true;
+                update_camera = true;
                 captureSet_->AddCapture(im_rgbd);
 
                 // Add point cloud or triangle mesh
@@ -218,8 +220,14 @@ void Reco3D::Program::Run()
             trackerPose = sensor_->GetTrackerPose();
             trackerMesh->Transform(trackerPose);
         }
+        
         vis_.UpdateGeometry();
         vis_.PollEvents();
+        // Update camera position if captured frame
+        if (update_camera)
+        {
+//            vis_.GetViewControl().SetViewMatrices(viewMtx);
+        }
         vis_.UpdateRender();
     } while (!flag_exit);
 
