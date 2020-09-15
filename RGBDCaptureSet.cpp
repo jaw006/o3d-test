@@ -44,7 +44,8 @@ Reco3D::RGBDCaptureSet::RGBDCaptureSet() :
     pointsToMesh_  (std::shared_ptr<PointsToMesh>   (new Reco3D::PointsToMesh())),
     combinedPoints_(std::shared_ptr<o3d_PointCloud> (new Reco3D::o3d_PointCloud())),
     combinedMesh_  (std::shared_ptr<o3d_TriMesh>    (new Reco3D::o3d_TriMesh())),
-    pointsVector_  (std::shared_ptr<PointsVector>   (new Reco3D::PointsVector()))
+    pointsVector_  (std::shared_ptr<PointsVector>   (new Reco3D::PointsVector())),
+    colorMap_      (std::shared_ptr<ColorMap>       (new Reco3D::ColorMap()))
 {
 }
 

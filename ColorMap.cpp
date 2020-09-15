@@ -1,5 +1,12 @@
 #include "ColorMap.h"
 
+
+Reco3D::ColorMap::ColorMap()
+{
+};
+Reco3D::ColorMap::~ColorMap()
+{
+};
 Reco3D::CameraPoseTrajectory Reco3D::ColorMap::ConstructTrajectoryFromCaptures(CaptureVector& captures)
 {
     CameraPoseTrajectory camPoseTrajectory;
@@ -26,6 +33,6 @@ void Reco3D::ColorMap::ColorMapOptimization(o3d_TriMesh& mesh, CaptureVector& ca
 {
     CameraPoseTrajectory camPoseTrajectory = ConstructTrajectoryFromCaptures(captures_);
     ImagePyramid pyramid = ConstructImagePyramidFromCaptures(captures_);
-    open3d::color_map::ColorMapOptimizationOption option();
-    open3d::color_map::ColorMapOptimization(mesh, pyramid, camPoseTrajectory, option);
+//    open3d::color_map::ColorMapOptimizationOption option();
+    open3d::color_map::ColorMapOptimization(mesh, pyramid, camPoseTrajectory);
 }
