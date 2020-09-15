@@ -67,6 +67,9 @@ void Reco3D::Program::AddTrackerOriginMeshes(const std::shared_ptr<open3d::geome
 
 void Reco3D::Program::Run()
 {
+    // Verbosity level
+    open3d::utility::SetVerbosityLevel(open3d::utility::VerbosityLevel::Debug);
+
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;

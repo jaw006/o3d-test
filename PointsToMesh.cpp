@@ -70,6 +70,8 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
    std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
    output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
 
+   // Color Mapping
+
    // Post processing
 //   output->FilterSmoothSimple(2);
 
@@ -84,6 +86,16 @@ Reco3D::PointsVector::PointsVector() :
 Reco3D::PointsVector::~PointsVector()
 {
 }
+
+Eigen::Matrix4d ExtractPoseTransform(Eigen::Matrix4d& m)
+{
+    Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
+    posePositionMatrix(0, 3) = m(0, 3);
+    posePositionMatrix(1, 3) = m(1, 3);
+    posePositionMatrix(2, 3) = m(2, 3);
+    return posePositionMatrix;
+}
+
 
 std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 {
@@ -115,27 +127,47 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     // Calculate matrices 
     ImagePose pose = points->GetPose();
     ImageQuaternion quat = points->GetQuat();
-    Eigen::Vector3d posePosition = { pose(0,3), pose(1,3), pose(2,3) };
-    Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
-    posePositionMatrix(0, 3) = pose(0, 3);
-    posePositionMatrix(1, 3) = pose(1, 3);
-    posePositionMatrix(2, 3) = pose(2, 3);
     Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
+
+    Eigen::Vector3d posePosition = { pose(0,3), pose(1,3), pose(2,3) };
+//    Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
+//    posePositionMatrix(0, 3) = pose(0, 3);
+//    posePositionMatrix(1, 3) = pose(1, 3);
+//    posePositionMatrix(2, 3) = pose(2, 3);
+    ImagePose posePositionMatrix = ExtractPoseTransform(pose);
 
     // Transform points by rotating 180 on Z axis and -90 on Y axis
     const Eigen::Affine3d aff = Eigen::Affine3d::Identity() * Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX());
     points->GetPoints()->Transform(aff.matrix());
-    points->GetPoints()->Transform(posePositionMatrix);
-    points->GetPoints()->Rotate(quatRotation, posePosition);
-
+    if (Count() == 0)
+    {
+        points->GetPoints()->Transform(posePositionMatrix);
+        points->GetPoints()->Rotate(quatRotation, posePosition);
+    }
     // Registration
     // Not sure if points get transformed when passed
-//    if (Count() > 0)
-//    {
-//        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-//        auto reg_result = RegisterPoints(GetSourcePointCloud(), points, m);
-//        points->GetPoints()->Transform(reg_result.transformation_);
-//    }
+    else
+    {
+        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+        auto reg_result = RegisterPoints(GetSourcePointCloud(), points, m);
+
+        // Transform points based on registration results
+        Eigen::Matrix4d reg_transform = reg_result.transformation_;
+        auto regTranslation = ExtractPoseTransform(Eigen::Matrix4d(reg_transform));
+        regTranslation(0, 3) += posePosition(0);
+        regTranslation(1, 3) += posePosition(1);
+        regTranslation(2, 3) += posePosition(2);
+        Eigen::Vector3d translationVector{ regTranslation(0,3),regTranslation(1,3), regTranslation(2,3) };
+        Eigen::Matrix3d rotation(reg_transform.topLeftCorner(3,3));
+        rotation(0, 3) = 0.0;
+        rotation(1, 3) = 0.0;
+        rotation(2, 3) = 0.0;
+        Eigen::Quaternion<double> regRotation(rotation);
+
+//        points->GetPoints()->Transform(posePositionMatrix);
+        points->GetPoints()->Transform(regTranslation);
+        points->GetPoints()->Rotate(quatRotation*rotation, translationVector);
+    }
 
     // Add to vector
     pointsVector_.push_back(points);
@@ -165,7 +197,7 @@ open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPoints(st
 
      auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
      auto criteria = open3d::registration::ICPConvergenceCriteria();
-     double max_correspondence_distance = 1.0;
+     double max_correspondence_distance = 0.04;
      criteria.max_iteration_ = 30;
      auto reg_result = open3d::registration::RegistrationICP(
          *source->GetPoints(),

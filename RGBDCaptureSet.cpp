@@ -95,5 +95,13 @@ const std::vector<std::shared_ptr<Reco3D::PointCloud>>& Reco3D::RGBDCaptureSet::
 
 std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::RGBDCaptureSet::GetCombinedTriangleMesh()
 {
-    return pointsToMesh_->ToMesh(pointsVector_);
+    std::shared_ptr<o3d_TriMesh> mesh = pointsToMesh_->ToMesh(pointsVector_);
+
+    // Only do color map optimization with multiple captures???
+//    if (Count() > 1)
+//    {
+        colorMap_->ColorMapOptimization(*mesh, captures_);
+//    }
+
+    return mesh;
 }

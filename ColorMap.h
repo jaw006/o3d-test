@@ -9,7 +9,8 @@ class ColorMap
 {
 private:
     typedef std::vector<std::shared_ptr<RGBDCapture_t>> CaptureVector;
-    typedef open3d::geometry::RGBDImagePyramid ImagePyramid;
+    typedef std::vector<ImageRGBD> ImagePyramid;
+//    typedef open3d::geometry::RGBDImagePyramid ImagePyramid;
     CameraPoseTrajectory ConstructTrajectoryFromCaptures(CaptureVector& captures);
     ImagePyramid ConstructImagePyramidFromCaptures(CaptureVector& captures);
 public:
