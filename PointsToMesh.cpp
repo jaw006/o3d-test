@@ -30,13 +30,13 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
         bool normalsGenerated = cloud.EstimateNormals();
     }
 
-//    // Mesh reconstruction - Ball Pivoting
-//    const std::vector<double> radii{ 0.01, 0.02, 0.04 };
-//    std::shared_ptr<open3d::geometry::TriangleMesh> output(open3d::geometry::TriangleMesh::CreateFromPointCloudBallPivoting(cloud, radii));
+    //      Mesh reconstruction - Ball Pivoting
+    //      Don't use this - it produces worse results on every run
+    //    const std::vector<double> radii{ 0.01, 0.02, 0.04 };
+    //    std::shared_ptr<open3d::geometry::TriangleMesh> output(open3d::geometry::TriangleMesh::CreateFromPointCloudBallPivoting(cloud, radii));
 
-//    // Mesh with default parameters - Poisson reconstruction
-    // 12 is good
-    // 8 is faster
+    // Mesh with default parameters - Poisson reconstruction
+    // 12 is good, 8 is faster
     uint64_t depth = 16;
     std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
              open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
@@ -93,16 +93,6 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
         *addedPts = *addedPts + *points->GetPoints();
     }
     combinedPoints_->SetPoints(addedPts);
-//    if (Count() > 0)
-//    {
-//        auto sourcePointCloud = pointsVector_.at(0);
-//        if (sourcePointCloud != nullptr)
-//        {
-//            // Set pose from the first point cloud in vector 
-//            const ImagePose& sourcePose = sourcePointCloud->GetPose();
-//            combinedPoints_->SetPose(sourcePose);
-//        }
-//    }
     return combinedPoints_;
 }
 
@@ -137,15 +127,17 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     points->GetPoints()->Transform(aff.matrix());
     points->GetPoints()->Transform(posePositionMatrix);
     points->GetPoints()->Rotate(quatRotation, posePosition);
-    Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
 
     // Registration
+    // Not sure if points get transformed when passed
 //    if (Count() > 0)
 //    {
+//        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
 //        auto reg_result = RegisterPoints(GetSourcePointCloud(), points, m);
 //        points->GetPoints()->Transform(reg_result.transformation_);
 //    }
 
+    // Add to vector
     pointsVector_.push_back(points);
     return true;
 }
@@ -173,8 +165,8 @@ open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPoints(st
 
      auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
      auto criteria = open3d::registration::ICPConvergenceCriteria();
-     double max_correspondence_distance = 100.0;
-     criteria.max_iteration_ = 100;
+     double max_correspondence_distance = 1.0;
+     criteria.max_iteration_ = 30;
      auto reg_result = open3d::registration::RegistrationICP(
          *source->GetPoints(),
          *target->GetPoints(),

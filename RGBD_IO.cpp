@@ -31,9 +31,9 @@ std::shared_ptr<Reco3D::RGBDCapture_t> Reco3D::IO::RGBDSensor_KinectVive::Captur
     // Get tracker matrix 
     if (vtpInterface_)
     {
-//        capture->pose_ = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
         capture->pose_ = GetTrackerPose();
         capture->quat_ = vtpInterface_->GetTrackerQuaternion(currentTrackerIndex_);
+//        capture->cameraPose_ = 
     }
     return capture;
 }
@@ -53,6 +53,11 @@ Reco3D::ImagePose Reco3D::IO::RGBDSensor_KinectVive::GetTrackerPose()
     }
 
     return ImagePose();
+}
+
+Reco3D::CameraPose Reco3D::IO::RGBDSensor_KinectVive::ConstructCameraPose(Reco3D::ImagePose& imgPose)
+{
+    return CameraPose();
 }
 
 bool Reco3D::IO::RGBDSensor_KinectVive::InitializeAzureKinect()
@@ -87,6 +92,8 @@ bool Reco3D::IO::RGBDSensor_KinectVive::InitializeVTPLib()
         std::cout << std::endl;
         currentTrackerIndex_ = ids[0];
         bool id_set = false;
+
+        // This is dumb
         for(auto id : ids)
         {
             if (!id_set && !vtpInterface_->GetTrackerMatrix4d(id).isIdentity())

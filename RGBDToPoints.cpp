@@ -15,8 +15,9 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
     {
         return output;
     }
-//    const PinholeCameraIntrinsic intrinsic(1280, 720, 601.1693115234375, 600.85931396484375, 637.83624267578125, 363.8018798828125);
-    const PinholeCameraIntrinsic intrinsic(1280, 720,
+    const PinholeCameraIntrinsic intrinsic(
+        CAMERA_RES_X, 
+        CAMERA_RES_Y,
         INTRINSIC_FX,
         INTRINSIC_FY,
         INTRINSIC_CX,
