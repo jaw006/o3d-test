@@ -55,9 +55,23 @@ Reco3D::ImagePose Reco3D::IO::RGBDSensor_KinectVive::GetTrackerPose()
     return ImagePose();
 }
 
-Reco3D::CameraPose Reco3D::IO::RGBDSensor_KinectVive::ConstructCameraPose(Reco3D::ImagePose& imgPose)
+// imgPose - extrinsic matrix
+Reco3D::CameraPoseParameters Reco3D::IO::RGBDSensor_KinectVive::ConstructCameraPose(Reco3D::ImagePose& imgPose)
 {
-    return CameraPose();
+    Reco3D::CameraPoseParameters camPoseParams;
+
+    const open3d::camera::PinholeCameraIntrinsic intrinsic(
+        CAMERA_RES_X, 
+        CAMERA_RES_Y,
+        INTRINSIC_FX,
+        INTRINSIC_FY,
+        INTRINSIC_CX,
+        INTRINSIC_CY);
+    Eigen::Matrix4d_u extrinsic(imgPose);
+
+    camPoseParams.intrinsic_ = intrinsic;
+    camPoseParams.extrinsic_ = extrinsic;
+    return camPoseParams;
 }
 
 bool Reco3D::IO::RGBDSensor_KinectVive::InitializeAzureKinect()

@@ -51,7 +51,7 @@ namespace Reco3D
 			~RGBDSensor_KinectVive();
 			std::shared_ptr<RGBDCapture_t> CaptureFrame() override;
 			ImagePose GetTrackerPose();
-			CameraPose ConstructCameraPose(ImagePose& imgPose);
+			CameraPoseParameters ConstructCameraPose(ImagePose& imgPose);
 		protected:
 			RGBDSensor_Config_KinectVive config_;
 			std::unique_ptr<open3d::io::AzureKinectSensor> sensor_;

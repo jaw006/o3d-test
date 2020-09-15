@@ -29,7 +29,7 @@ namespace Reco3D
 		ImagePose pose_;
 		ImageRGBD image_;
 		ImageQuaternion quat_;
-		CameraPose cameraPose_;
+		CameraPoseParameters camPose_;
 	};
 
     typedef open3d::geometry::PointCloud   o3d_PointCloud;
