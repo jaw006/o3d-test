@@ -10,6 +10,8 @@ Reco3D::PointsToMesh::~PointsToMesh()
 
 std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_ptr<Reco3D::PointsVector>& pointsVector)
 {
+    double quantile = 0.02; // Points with densities below this threshold will be removed
+
     // Empty points vector
     if (pointsVector->Count() <= 0)
     {
@@ -46,7 +48,6 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     // https://www.statisticshowto.com/quantile-definition-find-easy-steps/
     std::vector<double> densities_sorted = densities;
     std::sort(densities_sorted.begin(), densities_sorted.end());
-    double quantile = 0.01;
     int index = (int) std::floor(quantile * (densities_sorted.size() + 1));
     double threshold = densities_sorted.at(index);
 
@@ -67,8 +68,9 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
    size_t decimationFactor = 10;
    size_t numTrianglesDecimated = numTriangles / decimationFactor;
    std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
-   output->SimplifyQuadricDecimation(numTrianglesDecimated);
+   output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
 
+   // Post processing
 //   output->FilterSmoothSimple(2);
 
     return output;
@@ -137,51 +139,12 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     // +Z corresponds to -Y
     ImagePose pose = points->GetPose();
     ImageQuaternion quat = points->GetQuat();
-    Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
-    Eigen::Matrix3d quatRotationInverse = quatRotation;
-    quatRotationInverse.transposeInPlace();
-
+    Eigen::Vector3d posePosition = { pose(0,3), pose(1,3), pose(2,3) };
     Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
-    Eigen::Matrix4d inversePosePositionMatrix = Eigen::Matrix4d::Identity();
-    Eigen::Vector3d posePosition;
-    posePosition(0, 3) =  pose(0,3);
-    posePosition(1, 3) =  pose(1,3);
-    posePosition(2, 3) =  pose(2,3);
-    Eigen::Vector3d inversePosePosition = -posePosition;
     posePositionMatrix(0, 3) = pose(0, 3);
     posePositionMatrix(1, 3) = pose(1, 3);
     posePositionMatrix(2, 3) = pose(2, 3);
-    inversePosePositionMatrix(0, 3) = -pose(0, 3);
-    inversePosePositionMatrix(1, 3) = -pose(1, 3);
-    inversePosePositionMatrix(2, 3) = -pose(2, 3);
-
-    ImagePose poseRotation = pose;
-    poseRotation(0, 3) = 0.0;
-    poseRotation(1, 3) = 0.0;
-    poseRotation(2, 3) = 0.0;
-    poseRotation(3, 0) = 0.0;
-    poseRotation(3, 1) = 0.0;
-    poseRotation(3, 2) = 0.0;
-    poseRotation(3, 3) = 1.0;
-    ImagePose inversePoseRotation = poseRotation;
-    inversePoseRotation.transposeInPlace();
-
-    // Copy untransformed points
-//    std::shared_ptr<Reco3D::o3d_PointCloud> pointsCopy = std::make_shared<Reco3D::o3d_PointCloud>();
-//    *pointsCopy += *points->GetPoints();
-//    std::shared_ptr<Reco3D::PointCloud> copyPts = std::make_shared<Reco3D::PointCloud>(pointsCopy, points->GetCapture());
-//    copyPts->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-////    pointsCopy->GetPoints()->Transform(pose.inverse());
-//    pointsVector_.push_back(copyPts);
-
-//    std::cout << "Pose:\n" << pose << std::endl;
-//    std::cout << "Quaternion:\n" << quat << std::endl;
-//    std::cout << "Quaternion.w:\n" << std::to_string(quat(0)) << std::endl;
-//    std::cout << "QuaternionRotation:\n" << quatRotation << std::endl;
-//    std::cout << "posePositionMatrix:\n" << posePositionMatrix << std::endl;
-//    std::cout << "InversePosePositionMatrix:\n" << inversePosePositionMatrix << std::endl;
-//    std::cout << "Inverse:\n" << pose * inversePoseRotation * inversePosePositionMatrix << std::endl;
-
+    Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
 
     // // Transform points by rotating 180 on Z axis and -90 on Y axisE?
     Eigen::Affine3d aff = Eigen::Affine3d::Identity();
@@ -190,16 +153,15 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     points->GetPoints()->Transform(posePositionMatrix);
     points->GetPoints()->Rotate(quatRotation, posePosition);
     Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+
+    // Registration
 //    if (Count() > 0)
 //    {
 //        auto reg_result = RegisterPoints(GetSourcePointCloud(), points, m);
 //        points->GetPoints()->Transform(reg_result.transformation_);
 //    }
-    pointsVector_.push_back(points);
 
-//    std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
-//    *addedPts = *combinedPoints_->GetPoints() + *points->GetPoints();
-//    combinedPoints_->SetPoints(addedPts);
+    pointsVector_.push_back(points);
     return true;
 }
 
