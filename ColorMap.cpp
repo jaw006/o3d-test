@@ -24,6 +24,8 @@ Reco3D::ColorMap::ImagePyramid Reco3D::ColorMap::ConstructImagePyramidFromCaptur
 
 void Reco3D::ColorMap::ColorMapOptimization(o3d_TriMesh& mesh, CaptureVector& captures_)
 {
-//    open3d::geometry::RGBDImagePyramid
-//    open3d::color_map::ColorMapOptimization(mesh, );
+    CameraPoseTrajectory camPoseTrajectory = ConstructTrajectoryFromCaptures(captures_);
+    ImagePyramid pyramid = ConstructImagePyramidFromCaptures(captures_);
+    open3d::color_map::ColorMapOptimizationOption option();
+    open3d::color_map::ColorMapOptimization(mesh, pyramid, camPoseTrajectory, option);
 }
