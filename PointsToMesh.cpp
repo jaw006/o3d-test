@@ -106,6 +106,12 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
     return combinedPoints_;
 }
 
+// Adds points to vector
+// https://stackoverflow.com/questions/58727178/having-trouble-aligning-2d-lidar-pointcloud-to-match-the-coordinate-system-of-ht
+// https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
+// http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html
+// Notes : Construct inverse by transposing rotation and negating transform
+//          Camera forward is +Z
 bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 {
     // TODO: Check for duplicates, return false if not added
@@ -115,28 +121,8 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     // Downsample before doing transfomrations
     points->SetPoints(points->GetPoints()->VoxelDownSample(DOWNSAMPLE_VOXEL_SIZE));
 
-//    // Transform to shared coord system
-    if (Count() == 0)
-    {
-//        // Source transformation
-        sourcePose = points->GetPose();
-        sourcePoseInverse = points->GetPose().inverse();
-//       points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 0.0, 0.0));
-    }
-    else
-    {
-//        points->GetPoints()->PaintUniformColor(Eigen::Vector3d(1.0, 1.0-(Count()*0.2), 1.0-(Count()*0.1)));
-//        auto reg_result = RegisterPoints(GetSourcePointCloud(), points);
-//        points->GetPoints()->Transform(reg_result.transformation_);
-//
-    }
-    // https://stackoverflow.com/questions/58727178/having-trouble-aligning-2d-lidar-pointcloud-to-match-the-coordinate-system-of-ht
-    // Construct inverse by transposing rotation and negating transform
-    // Camera forward is +Z
-    // https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
-    // http://www.graphics.stanford.edu/courses/cs248-98-fall/Final/q4.html
-
     // +Z corresponds to -Y
+    // Calculate matrices 
     ImagePose pose = points->GetPose();
     ImageQuaternion quat = points->GetQuat();
     Eigen::Vector3d posePosition = { pose(0,3), pose(1,3), pose(2,3) };
@@ -146,9 +132,8 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     posePositionMatrix(2, 3) = pose(2, 3);
     Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
 
-    // // Transform points by rotating 180 on Z axis and -90 on Y axisE?
-    Eigen::Affine3d aff = Eigen::Affine3d::Identity();
-    aff.rotate(Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX()));
+    // Transform points by rotating 180 on Z axis and -90 on Y axis
+    const Eigen::Affine3d aff = Eigen::Affine3d::Identity() * Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX());
     points->GetPoints()->Transform(aff.matrix());
     points->GetPoints()->Transform(posePositionMatrix);
     points->GetPoints()->Rotate(quatRotation, posePosition);
