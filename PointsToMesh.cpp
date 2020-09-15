@@ -101,6 +101,13 @@ Eigen::Matrix4d ExtractPoseTransform(Eigen::Matrix4d& m)
     return posePositionMatrix;
 }
 
+Eigen::Matrix4d ExtractPoseRotation(Eigen::Matrix4d& m)
+{
+    Eigen::Matrix4d rotMatrix = Eigen::Matrix4d::Identity();
+    rotMatrix.topLeftCorner(3, 3) = m.topLeftCorner(3, 3);
+    return rotMatrix;
+}
+
 
 std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 {
@@ -152,44 +159,115 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //    points->GetPoints()->Transform(aff.matrix());
 //    points->GetPoints()->Transform(posePositionMatrix);
 //    points->GetPoints()->Rotate(quatRotation, posePosition);
+
+    // Do initial transformation
     points->GetPoints()->Transform(mtx);
 
     // Registration
-    // Not sure if points get transformed when passed
-    if (Count() == 0)
+    if (Count() > 0)
     {
+        bool transformed = false;
+        int transformationCount = 0;
+        Eigen::Matrix4d transformMtx = Eigen::Matrix4d::Identity();
+        Eigen::Matrix4d regMtx = Eigen::Matrix4d::Identity();
+        auto& source = points;
+
+        // Break on transformed being true
+        for (auto cloudIt = pointsVector_.rbegin(); (cloudIt != pointsVector_.rend()) && (!transformed); cloudIt++)
+        {
+            auto& target = *cloudIt;
+            double notGoodRMSE = 0.2;
+            double goodEnoughRMSE = 0.05;
+            double excellentRMSE = 0.01;
+
+            auto existingRegResults = EvaluateCurrentRegistration(source, target, regMtx);
+            double& currentRMSE = existingRegResults.inlier_rmse_;
+            if (currentRMSE > notGoodRMSE)
+            {
+                std::cout << "Current point cloud is not a good match for ICP, continuing." << std::endl;
+                continue;
+            }
+            if (currentRMSE < excellentRMSE)
+            {
+                std::cout << "Current RMSE " << currentRMSE << " is good enough." << std::endl;
+                continue;
+            }
+
+            // Compute new registration
+            auto newRegResult= RegisterPointsICP(source, target, regMtx);
+            double& newRMSE = newRegResult.inlier_rmse_;
+            if (newRMSE < currentRMSE && newRMSE < goodEnoughRMSE)
+            {
+                std::cout << "Transforming point cloud based on new reg results" << std::endl;
+                source->GetPoints()->Transform(newRegResult.transformation_);
+                transformMtx *= newRegResult.transformation_;
+                transformationCount++;
+                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
+//                regMtx *= newRegResult.transformation_;
+            }
+            else
+            {
+                std::cout << "Using old registration results." << std::endl;
+            }
+
+            if (newRMSE < goodEnoughRMSE)
+            {
+                transformed = true;
+            }
+        }
+
+        // Do final transformation
+        source->GetPoints()->Transform(regMtx);
+        std::cout << "Transformed point cloud " << transformationCount << " times." << std::endl;
+        std::cout << "Final reg mtx:\n" << transformMtx << std::endl;
+
+        if (!transformed)
+        {
+            std::cout << "Failed to find better ICP registration" << std::endl;
+        }
     }
-    else
-    {
-        Eigen::Matrix4d& m = mtx;
-        double max_correspondence_distance = 10.0;
-        auto current_reg_result = open3d::registration::EvaluateRegistration(*(pointsVector_.back())->GetPoints(), *points->GetPoints(), max_correspondence_distance, mtx);
-        std::cout << "Current fitness:" << current_reg_result.fitness_ << std::endl;
-        std::cout << "Current RMSE:" << current_reg_result.inlier_rmse_<< std::endl;
-        std::cout << "Current transformation:" << Eigen::Matrix4d::Identity() * aff.matrix() * inversePosePositionMatrix * quatRotationMtx * posePositionMatrix << std::endl;
 
-
-        // Transform points based on registration results
-        auto reg_result = RegisterPoints(pointsVector_.back(), points, m);
-        Eigen::Matrix4d reg_transform = reg_result.transformation_;
-        auto regTranslation = ExtractPoseTransform(Eigen::Matrix4d(reg_transform));
-        Eigen::Vector3d translationVector{ regTranslation(0,3),regTranslation(1,3), regTranslation(2,3) };
-
-//        posePositionMatrix(0, 3) += reg_transform(0, 3);
-//        posePositionMatrix(1, 3) += reg_transform(1, 3);
-//        posePositionMatrix(2, 3) += reg_transform(2, 3);
-//        posePosition(0) += reg_transform(0, 3);
-//        posePosition(1) += reg_transform(1, 3);
-//        posePosition(2) += reg_transform(2, 3);
-        Eigen::Matrix3d regRotation(reg_transform.topLeftCorner(3, 3));
-        quatRotation = regRotation.inverse();
-//        points->GetPoints()->Transform(reg_transform);
-//        points->GetPoints()->Rotate(quatRotation, translationVector);
-//        points->GetPoints()->Rotate(regRotation, translationVector);
-    }
     // Add to vector
     pointsVector_.push_back(points);
     return true;
+}
+
+open3d::registration::RegistrationResult Reco3D::PointsVector::EvaluateCurrentRegistration(std::shared_ptr<Reco3D::PointCloud>& source, std::shared_ptr<Reco3D::PointCloud>& target, Eigen::Matrix4d& m)
+{
+    //        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+    double max_correspondence_distance = 1000.0;
+
+    // Evaluate current registration
+    auto current_reg_result = open3d::registration::EvaluateRegistration(*source->GetPoints(), *target->GetPoints(), max_correspondence_distance, m);
+    double current_rmse = current_reg_result.inlier_rmse_;
+    std::cout << "Current fitness:" << current_reg_result.fitness_ << std::endl;
+    std::cout << "Current RMSE:" << current_rmse << std::endl;
+    std::cout << "Current transformation:" << m << std::endl;
+    return current_reg_result;
+
+//    // Transform points based on registration results
+//    // ICP aligns  points(SOURCE) to pointsVector_.back()(TARGET) 
+//    auto reg_result = RegisterPointsICP(source, target, m);
+//    if (current_rmse > reg_result.inlier_rmse_)
+//    {
+//        std::cout << "New registration results are better!" << std::endl;
+//    }
+//    else
+//    {
+//        std::cout << "Using old registration results." << std::endl;
+//    }
+//
+//    Eigen::Matrix4d reg_transform = reg_result.transformation_;
+//    auto regTranslation = ExtractPoseTransform(Eigen::Matrix4d(reg_transform));
+//    Eigen::Vector3d translationVector{ regTranslation(0,3),regTranslation(1,3), regTranslation(2,3) };
+//    Eigen::Matrix4d regRotation = Eigen::Matrix4d::Identity();
+//    regRotation.topLeftCorner(3, 3) = reg_result.transformation_.topLeftCorner(3, 3);
+//
+//    Eigen::Affine3d regAffine = Eigen::Affine3d::Identity();
+//    regAffine *= Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitX());
+//
+//    Eigen::Matrix4d finalRegMtx = reg_transform;
+//
 }
 
 size_t Reco3D::PointsVector::Count()
@@ -209,14 +287,14 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetSourcePointCloud()
     }
 }
 
-open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud> source, 
+// Aligns SOURCE to TARGET
+open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPointsICP(std::shared_ptr<Reco3D::PointCloud> source, 
     std::shared_ptr<Reco3D::PointCloud> target, Reco3D::ImagePose& target_pose)
 {
-
-     auto estimation = open3d::registration::TransformationEstimationPointToPoint(false);
+     auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
      auto criteria = open3d::registration::ICPConvergenceCriteria();
      double max_correspondence_distance = 100.0;
-     criteria.max_iteration_ = 30;
+     criteria.max_iteration_ = 60;
      auto reg_result = open3d::registration::RegistrationICP(
          *source->GetPoints(),
          *target->GetPoints(),
