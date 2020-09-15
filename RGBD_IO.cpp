@@ -31,9 +31,10 @@ std::shared_ptr<Reco3D::RGBDCapture_t> Reco3D::IO::RGBDSensor_KinectVive::Captur
     // Get tracker matrix 
     if (vtpInterface_)
     {
-        capture->pose_ = GetTrackerPose();
+        Reco3D::ImagePose pose = GetTrackerPose();
+        capture->pose_ = pose;
         capture->quat_ = vtpInterface_->GetTrackerQuaternion(currentTrackerIndex_);
-//        capture->cameraPose_ = 
+        capture->camPose_ = ConstructCameraPose(pose);
     }
     return capture;
 }
