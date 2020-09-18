@@ -18,7 +18,8 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
         return std::make_shared<Reco3D::o3d_TriMesh>();
     }
 
-    Reco3D::o3d_PointCloud cloud = *pointsVector->GetCombinedPoints()->GetPoints();
+    std::shared_ptr<Reco3D::PointCloud> cloudObject = pointsVector->GetCombinedPoints();
+    Reco3D::o3d_PointCloud cloud = *cloudObject->GetPoints();
 
     // Downsample before calculating normals
 //    cloud = *cloud.UniformDownSample(2);
@@ -37,7 +38,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Mesh with default parameters - Poisson reconstruction
     // 12 is good, 8 is faster
-    uint64_t depth = 8;
+    uint64_t depth = 12;
     std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
              open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
     std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
@@ -63,8 +64,10 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     std::cout << "Removing " << indices_to_remove.size() << " vertices!" << std::endl;
     output->RemoveVerticesByIndex(indices_to_remove);
 
+    // Coutn number of tris
+  size_t numTriangles = output->triangles_.size();
+
     // Decimate
- //  size_t numTriangles = output->triangles_.size();
  //  size_t decimationFactor = 2;
  //  size_t numTrianglesDecimated = numTriangles / decimationFactor;
  //  std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
@@ -78,7 +81,47 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
    // Color Mapping
 
    // Post processing
-//   output->FilterSmoothSimple(2);
+
+
+    // Poisson sampling
+    {
+        double init_factor = 5.0;
+        const std::shared_ptr<o3d_PointCloud> c = cloudObject->GetPoints();
+        output->SamplePointsPoissonDisk(numTriangles / 2, init_factor, cloudObject->GetPoints());
+    }
+
+    // Cluster removal
+    // Remove clusters with fewer than min_tris in it
+    {
+        int min_tris = 100;
+        auto clusterResults = output->ClusterConnectedTriangles();
+        auto clusterIndexPerTriangle = std::get<std::vector<int>>(clusterResults);
+        auto numTrisPerCluster = std::get<std::vector<size_t>>(clusterResults);
+        auto surfaceAreaPerCluster = std::get<std::vector<double>>(clusterResults);
+
+        // Initialize vector for triangle mask, initialized to false
+        std::vector<bool> trisToRemove(clusterIndexPerTriangle.size(), false);
+
+        for (int triIdx = 0; triIdx < clusterIndexPerTriangle.size(); triIdx++)
+        {
+            bool removeTri = false;
+            int clusterIdx = clusterIndexPerTriangle.at(triIdx);
+            if (numTrisPerCluster.at(clusterIdx) < min_tris)
+            {
+                // Remove this triangle
+                trisToRemove.at(triIdx) = true;
+            }
+        }
+        // Remove identified clusters and cleanup afterwards
+        output->RemoveTrianglesByMask(trisToRemove);
+        output->RemoveUnreferencedVertices();
+    }
+
+    // Smooth
+    {
+//        int num_iterations = 2;
+//        output->FilterSmoothSimple(num_iterations);
+    }
 
     return output;
 }
