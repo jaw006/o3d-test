@@ -10,7 +10,7 @@ Reco3D::PointsToMesh::~PointsToMesh()
 
 std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_ptr<Reco3D::PointsVector>& pointsVector)
 {
-    double quantile = 0.02; // Points with densities below this threshold will be removed
+    double quantile = 0.01; // Points with densities below this threshold will be removed
 
     // Empty points vector
     if (pointsVector->Count() <= 0)
@@ -38,7 +38,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Mesh with default parameters - Poisson reconstruction
     // 12 is good, 8 is faster
-    uint64_t depth = 8;
+    uint64_t depth = 16;
     std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
              open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
     std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
@@ -65,7 +65,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
                 indices_to_remove.push_back(index);
             }
         }
-        std::cout << "Removing " << indices_to_remove.size() << " vertices!" << std::endl;
+//        std::cout << "Removing " << indices_to_remove.size() << " vertices!" << std::endl;
         output->RemoveVerticesByIndex(indices_to_remove);
     }
 
@@ -133,10 +133,10 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     }
 
     // Smooth
-    {
-        int num_iterations = 2;
-        output->FilterSmoothSimple(num_iterations);
-    }
+//    {
+//        int num_iterations = 2;
+//        output->FilterSmoothSimple(num_iterations);
+//    }
 
     return output;
 }
@@ -171,6 +171,7 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 {
     const double hiddenPtRemovalRadius = 100.0;
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
+    RegisterPoints();
     for (auto points : pointsVector_)
     {
         // Post process points
@@ -287,11 +288,13 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     points->GetPoints()->Transform(mtx);
     points->SetPose(mtx);
 
+    // Cleanup
+
     // Registration
     bool doRegistration = true;
     if (doRegistration)
     {
-        RegisterPoints(points);
+        RegisterPoints();
     }
 
     // Add to vector
@@ -304,7 +307,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     return true;
 }
 
-void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& points)
+void Reco3D::PointsVector::RegisterPoints()
 {
     if (Count() > 2)
     {
@@ -312,7 +315,7 @@ void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& p
         int transformationCount = 0;
         Eigen::Matrix4d transformMtx = Eigen::Matrix4d::Identity();
         Eigen::Matrix4d regMtx = Eigen::Matrix4d::Identity();
-        auto& source = points;
+//        auto& source = points;
 
         // Break on transformed being true
         for (auto cloudIt = pointsVector_.rbegin() + 1; (cloudIt+1 != pointsVector_.rend()) && (!transformed); cloudIt++)
@@ -329,19 +332,19 @@ void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& p
             for (auto cloud : compareClouds)
             {
                 auto& target = cloud;
-                double notGoodRMSE = 0.2;
+                double notGoodRMSE = 0.3;
                 double goodEnoughRMSE = 0.025;
                 double excellentRMSE = 0.01;
                 auto existingRegResults = EvaluateCurrentRegistration(source, target, regMtx);
                 double& currentRMSE = existingRegResults.inlier_rmse_;
                 if (currentRMSE > notGoodRMSE)
                 {
-                    std::cout << "Current point cloud is not a good match for ICP, continuing." << std::endl;
+//                    std::cout << "Current point cloud is not a good match for ICP, continuing." << std::endl;
                     continue;
                 }
                 if (currentRMSE < excellentRMSE)
                 {
-                    std::cout << "Current RMSE " << currentRMSE << " is good enough." << std::endl;
+//                    std::cout << "Current RMSE " << currentRMSE << " is good enough." << std::endl;
                     continue;
                 }
 
@@ -350,7 +353,7 @@ void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& p
                 double& newRMSE = newRegResult.inlier_rmse_;
                 if (newRMSE < currentRMSE && newRMSE < goodEnoughRMSE)
                 {
-                    std::cout << "Transforming point cloud based on new reg results" << std::endl;
+//                    std::cout << "Transforming point cloud based on new reg results" << std::endl;
                     source->GetPoints()->Transform(newRegResult.transformation_);
                     transformMtx = newRegResult.transformation_ * transformMtx;
                     transformationCount++;
@@ -359,7 +362,7 @@ void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& p
                 }
                 else
                 {
-                    std::cout << "Discarding new registration results." << std::endl;
+//                    std::cout << "Discarding new registration results." << std::endl;
                 }
                 if (newRMSE < goodEnoughRMSE)
                 {
@@ -370,13 +373,12 @@ void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& p
 
         // Do final transformation
 //        source->GetPoints()->Transform(regMtx);
-        std::cout << "Transformed point cloud " << transformationCount << " times." << std::endl;
-        std::cout << "Final reg mtx:\n" << transformMtx << std::endl;
-
-        if (!transformed)
-        {
-            std::cout << "Failed to find better ICP registration" << std::endl;
-        }
+//        std::cout << "Transformed point cloud " << transformationCount << " times." << std::endl;
+//        std::cout << "Final reg mtx:\n" << transformMtx << std::endl;
+//        if (!transformed)
+//        {
+//            std::cout << "Failed to find better ICP registration" << std::endl;
+//        }
     }
 }
 
@@ -388,9 +390,9 @@ open3d::registration::RegistrationResult Reco3D::PointsVector::EvaluateCurrentRe
     // Evaluate current registration
     auto current_reg_result = open3d::registration::EvaluateRegistration(*source->GetPoints(), *target->GetPoints(), max_correspondence_distance, m);
     double current_rmse = current_reg_result.inlier_rmse_;
-    std::cout << "Current fitness:" << current_reg_result.fitness_ << std::endl;
-    std::cout << "Current RMSE:" << current_rmse << std::endl;
-    std::cout << "Current transformation:" << m << std::endl;
+//    std::cout << "Current fitness:" << current_reg_result.fitness_ << std::endl;
+//    std::cout << "Current RMSE:" << current_rmse << std::endl;
+//    std::cout << "Current transformation:" << m << std::endl;
     return current_reg_result;
 
 //    // Transform points based on registration results
@@ -441,8 +443,8 @@ open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPointsICP
 {
      auto estimation = open3d::registration::TransformationEstimationPointToPoint(true);
      auto criteria = open3d::registration::ICPConvergenceCriteria();
-     double max_correspondence_distance = 100.0;
-     criteria.max_iteration_ = 60;
+     double max_correspondence_distance = 50.0;
+     criteria.max_iteration_ = 300;
      auto reg_result = open3d::registration::RegistrationICP(
          *source->GetPoints(),
          *target->GetPoints(),
@@ -454,10 +456,10 @@ open3d::registration::RegistrationResult Reco3D::PointsVector::RegisterPointsICP
     // Print fitness, RMSE
     double& fitness = reg_result.fitness_; 
     double& rmse = reg_result.inlier_rmse_;
-    std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
-    std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
-    std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
-    open3d::utility::LogInfo(log1.c_str());
-    open3d::utility::LogInfo(log2.c_str());
+//    std::string log1 = "Fitness= " + std::to_string(fitness) + "\n";
+//    std::string log2 = "RMSE= " + std::to_string(rmse) + "\n";
+//    std::cout << "Transformation Estimation:\n" << reg_result.transformation_ << std::endl;
+//    open3d::utility::LogInfo(log1.c_str());
+//    open3d::utility::LogInfo(log2.c_str());
     return reg_result;
 }

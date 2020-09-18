@@ -37,7 +37,7 @@ std::shared_ptr<open3d::geometry::RGBDImage> Reco3D::RGBDToPoints::MakeNewRGBDIm
 {
     auto& color = image->color_;
     auto& depth = image->depth_;
-    return open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, 1000.0, 3.0, false);
+    return open3d::geometry::RGBDImage::CreateFromColorAndDepth(color, depth, 1000.0, 2.0, false);
 }
 
 bool Reco3D::RGBDToPoints::ExportCapture(std::string filename,
