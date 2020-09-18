@@ -31,9 +31,10 @@ std::shared_ptr<Reco3D::RGBDCapture_t> Reco3D::IO::RGBDSensor_KinectVive::Captur
     // Get tracker matrix 
     if (vtpInterface_)
     {
-//        capture->pose_ = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
-        capture->pose_ = GetTrackerPose();
+        Reco3D::ImagePose pose = GetTrackerPose();
+        capture->pose_ = pose;
         capture->quat_ = vtpInterface_->GetTrackerQuaternion(currentTrackerIndex_);
+        capture->camPose_ = ConstructCameraPose(pose);
     }
     return capture;
 }
@@ -43,16 +44,41 @@ Reco3D::ImagePose Reco3D::IO::RGBDSensor_KinectVive::GetTrackerPose()
     if (vtpInterface_)
     {
         Reco3D::ImagePose pose = vtpInterface_->GetTrackerMatrix4d(currentTrackerIndex_);
+        Eigen::Vector3d posePosition = { pose(0,3), pose(1,3), pose(2,3) };
+        Eigen::Matrix4d posePositionMatrix = Eigen::Matrix4d::Identity();
+        posePositionMatrix(0, 3) = pose(0, 3);
+        posePositionMatrix(1, 3) = pose(1, 3);
+        posePositionMatrix(2, 3) = pose(2, 3);
         // Transformation from Tracker to Camera coords
-        Eigen::Affine3d aff = Eigen::Affine3d::Identity();
-        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
-        aff.rotate(Eigen::AngleAxisd(M_PI/2, Eigen::Vector3d::UnitX()));
-//        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
+        const Eigen::Affine3d aff =
+            Eigen::Affine3d::Identity() *
+            Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()) *
+            Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitX());
+//                    Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX());
         pose *= aff.matrix();
         return pose;
     }
 
     return ImagePose();
+}
+
+// imgPose - extrinsic matrix
+Reco3D::CameraPoseParameters Reco3D::IO::RGBDSensor_KinectVive::ConstructCameraPose(Reco3D::ImagePose& imgPose)
+{
+    Reco3D::CameraPoseParameters camPoseParams;
+
+    const open3d::camera::PinholeCameraIntrinsic intrinsic(
+        CAMERA_RES_X, 
+        CAMERA_RES_Y,
+        INTRINSIC_FX,
+        INTRINSIC_FY,
+        INTRINSIC_CX,
+        INTRINSIC_CY);
+    Eigen::Matrix4d_u extrinsic(imgPose);
+
+    camPoseParams.intrinsic_ = intrinsic;
+    camPoseParams.extrinsic_ = extrinsic;
+    return camPoseParams;
 }
 
 bool Reco3D::IO::RGBDSensor_KinectVive::InitializeAzureKinect()
@@ -72,6 +98,7 @@ bool Reco3D::IO::RGBDSensor_KinectVive::InitializeVTPLib()
 
     auto ids = vtpInterface_->GetTrackerIds();
     if (ids.empty())
+//        aff.rotate(Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitZ()));
     {
         std::cout << "Error: No VIVE Trackers found!";
         return false;
@@ -86,6 +113,8 @@ bool Reco3D::IO::RGBDSensor_KinectVive::InitializeVTPLib()
         std::cout << std::endl;
         currentTrackerIndex_ = ids[0];
         bool id_set = false;
+
+        // This is dumb
         for(auto id : ids)
         {
             if (!id_set && !vtpInterface_->GetTrackerMatrix4d(id).isIdentity())

@@ -15,8 +15,9 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
     {
         return output;
     }
-//    const PinholeCameraIntrinsic intrinsic(1280, 720, 601.1693115234375, 600.85931396484375, 637.83624267578125, 363.8018798828125);
-    const PinholeCameraIntrinsic intrinsic(1280, 720,
+    const PinholeCameraIntrinsic intrinsic(
+        CAMERA_RES_X, 
+        CAMERA_RES_Y,
         INTRINSIC_FX,
         INTRINSIC_FY,
         INTRINSIC_CX,
@@ -24,7 +25,9 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDToPoints::ToPointCloud(std::shar
     auto new_img = MakeNewRGBDImage(capture->image_);
 
 //    auto extrinsic = capture->pose_.inverse(); // maps camera pose to world coords // this works for position
+//    const Eigen::Affine3d aff = Eigen::Affine3d::Identity() * Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX());
 //    Eigen::Matrix4d extrinsic = capture->pose_;
+//    extrinsic *= aff.matrix();
     auto extrinsic = Eigen::Matrix4d::Identity(); // maps camera pose to world coords
     auto img = open3d::geometry::PointCloud::CreateFromRGBDImage(*new_img, intrinsic,extrinsic);
     std::shared_ptr<Reco3D::PointCloud> cloud = std::make_shared<Reco3D::PointCloud>(img, capture);

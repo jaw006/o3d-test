@@ -3,6 +3,7 @@
 #include "PointCloud.h"
 #include "PointsToMesh.h"
 #include "RGBDToPoints.h"
+#include "ColorMap.h"
 #include "Types.h"
 
 namespace Reco3D
@@ -21,6 +22,8 @@ namespace Reco3D
         std::shared_ptr<o3d_PointCloud> combinedPoints_;
         std::shared_ptr<o3d_TriMesh>    combinedMesh_;
         std::shared_ptr<PointsVector>   pointsVector_;
+
+        std::shared_ptr<ColorMap>   colorMap_;
 
         std::shared_ptr<PointCloud> GetSourcePointCloud();
 

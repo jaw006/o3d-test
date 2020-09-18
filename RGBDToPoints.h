@@ -32,10 +32,6 @@
 // 	"stream_length_usec" : 14933344,
 // 	"width" : 1280
 // }
-#define INTRINSIC_FX 612.31494140625
-#define INTRINSIC_FY 612.007080078125
-#define INTRINSIC_CX 636.7769775390625
-#define INTRINSIC_CY 370.02471923828125
 
 // Takes a open3d::Geometry::RGBDImage and converts it into points
 using namespace open3d::camera;

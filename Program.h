@@ -37,6 +37,7 @@ namespace Reco3D
         Program(open3d::visualization::VisualizerWithKeyCallback& vis);
         ~Program();
         void ExportAllPoints();
+        void AddTrackerOriginMeshes(const std::shared_ptr<open3d::geometry::TriangleMesh>& trackerMesh, const std::shared_ptr<open3d::geometry::TriangleMesh>& origin);
         void Run();
 
         // Helper methods

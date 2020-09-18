@@ -57,14 +57,28 @@ void Reco3D::Program::ExportAllPoints()
     }
 }
 
+void Reco3D::Program::AddTrackerOriginMeshes(const std::shared_ptr<open3d::geometry::TriangleMesh>& trackerMesh, const std::shared_ptr<open3d::geometry::TriangleMesh>& origin)
+{
+    vis_.AddGeometry(trackerMesh);
+    vis_.AddGeometry(origin);
+    vis_.UpdateGeometry();
+    vis_.UpdateRender();
+}
+
 void Reco3D::Program::Run()
 {
+    // Verbosity level
+    open3d::utility::SetVerbosityLevel(open3d::utility::VerbosityLevel::Debug);
+
     // Status booleans
     bool flag_exit = false;
     bool is_geometry_added = false;
-    bool capture_frame = false; // Should be false on startup
+    bool capture_frame = false;      // Should be false on startup
+    bool make_triangle_mesh = false; // Whether to turn cloud into mesh
     bool clear = false;
     bool update_render = false;
+    bool show_tracker = true;
+    bool update_camera = false;
 
     // TRACKER VISUALIZATION 
     Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
@@ -83,6 +97,11 @@ void Reco3D::Program::Run()
 //            newSource = true;
             return false;
         });
+    vis_.RegisterKeyCallback(GLFW_KEY_M,
+        [&](visualization::Visualizer* vis) {
+            make_triangle_mesh = !make_triangle_mesh;
+            return false;
+        });
     vis_.RegisterKeyCallback(GLFW_KEY_E,
         [&](visualization::Visualizer* vis) {
             ExportAllPoints();
@@ -94,16 +113,17 @@ void Reco3D::Program::Run()
 //            clear = true;
             captureSet_->Clear();
             vis->ClearGeometries();
-            // Add coord system
-            vis_.AddGeometry(trackerMesh);
-            vis_.AddGeometry(origin);
-            vis_.UpdateGeometry();
-            vis->UpdateRender();
+            AddTrackerOriginMeshes(trackerMesh, origin);
             return false;
         });
     vis_.RegisterKeyCallback(GLFW_KEY_W,
         [&](visualization::Visualizer* vis) {
             vis->GetRenderOption().ToggleMeshShowWireframe();
+            return false;
+        });
+    vis_.RegisterKeyCallback(GLFW_KEY_T,
+        [&](visualization::Visualizer* vis) {
+            show_tracker = !show_tracker;
             return false;
         });
 
@@ -151,14 +171,26 @@ void Reco3D::Program::Run()
             else {
                 capture_frame = false;
                 update_render = true;
+                update_camera = true;
                 captureSet_->AddCapture(im_rgbd);
-              // Add geometry pointer if not done before
-                auto pointsVector = captureSet_->GetPointsVector();
-                for (auto pointIt = pointsVector.begin(); pointIt != pointsVector.end(); pointIt++)
+
+                // Add point cloud or triangle mesh
+                if(!make_triangle_mesh)
                 {
-                    vis_.AddGeometry((*pointIt)->GetPoints());
+                    std::cout << "Adding point cloud!" << std::endl;
+                    auto pointsVector = captureSet_->GetPointsVector();
+                    // Add last created point cloud
+                    vis_.AddGeometry((pointsVector.back())->GetPoints());
                 }
-//                vis_.AddGeometry(captureSet_->GetCombinedPointCloud()->GetPoints());
+                else
+                {
+                    {
+                        std::cout << "Adding triangle mesh!" << std::endl;
+                        vis_.ClearGeometries();
+                        AddTrackerOriginMeshes(trackerMesh, origin);
+                        vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+                    }
+                }
                 is_geometry_added = true;
                 std::cout << "Done!" << std::endl;
 
@@ -182,11 +214,20 @@ void Reco3D::Program::Run()
             update_render = false;
         }
         // Update tracker
-        trackerMesh->Transform(trackerPose.inverse());
-        trackerPose = sensor_->GetTrackerPose();
-        trackerMesh->Transform(trackerPose);
+        if (show_tracker)
+        {
+            trackerMesh->Transform(trackerPose.inverse());
+            trackerPose = sensor_->GetTrackerPose();
+            trackerMesh->Transform(trackerPose);
+        }
+        
         vis_.UpdateGeometry();
         vis_.PollEvents();
+        // Update camera position if captured frame
+        if (update_camera)
+        {
+//            vis_.GetViewControl().SetViewMatrices(viewMtx);
+        }
         vis_.UpdateRender();
     } while (!flag_exit);
 
@@ -194,6 +235,7 @@ void Reco3D::Program::Run()
   // EXIT CLEANUP
   // -----------------------------------------------------------------
 }
+
 
 // TODO Refactor this
 void Reco3D::Program::AddSourcePointCloud(Reco3D::PointCloud& source, open3d::visualization::VisualizerWithKeyCallback& vis)
