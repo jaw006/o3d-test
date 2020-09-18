@@ -232,15 +232,6 @@ void Reco3D::Program::Run()
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
-        if (update_render)
-        {
-            if (is_geometry_added)
-            {
-                vis_.UpdateGeometry();
-                is_geometry_added = false;
-            }
-            update_render = false;
-        }
 
         vis_.PollEvents();
 
@@ -257,6 +248,7 @@ void Reco3D::Program::Run()
             {
                 vis_.AddGeometry(trackerMesh);
                 vis_.AddGeometry(origin);
+                is_geometry_added = true;
                 hidden_tracker = false;
             }
         }
@@ -266,8 +258,14 @@ void Reco3D::Program::Run()
             {
                 vis_.RemoveGeometry(trackerMesh);
                 vis_.RemoveGeometry(origin);
+                is_geometry_added = true;
                 hidden_tracker = true;
             }
+        }
+        if (is_geometry_added)
+        {
+            vis_.UpdateGeometry();
+            is_geometry_added = false;
         }
         if (update_camera)
         {
@@ -280,6 +278,7 @@ void Reco3D::Program::Run()
             camPose.topLeftCorner(3, 3) = rotMat;
             cam.extrinsic_ = camPose.inverse();
             view.ConvertFromPinholeCameraParameters(cam);
+            show_tracker = false;
         }
         vis_.UpdateRender();
     } while (!flag_exit);

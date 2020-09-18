@@ -44,25 +44,30 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
     std::vector<double> densities = std::get<std::vector<double>>(tuple_result);
 
+    output->ComputeVertexNormals();
+    output->ComputeTriangleNormals();
+
     // Remove vertices created that fall below 0.01 quantile
     // http://www.open3d.org/docs/release/tutorial/Advanced/surface_reconstruction.html
     // https://www.statisticshowto.com/quantile-definition-find-easy-steps/
-    std::vector<double> densities_sorted = densities;
-    std::sort(densities_sorted.begin(), densities_sorted.end());
-    int index = (int) std::floor(quantile * (densities_sorted.size() + 1));
-    double threshold = densities_sorted.at(index);
-
-    // Add indices of vertices to remove to this vector
-    std::vector<size_t> indices_to_remove;
-    for (size_t index = 0; index < densities.size(); index++)
     {
-        if (densities.at(index) < threshold)
+        std::vector<double> densities_sorted = densities;
+        std::sort(densities_sorted.begin(), densities_sorted.end());
+        int index = (int)std::floor(quantile * (densities_sorted.size() + 1));
+        double threshold = densities_sorted.at(index);
+
+        // Add indices of vertices to remove to this vector
+        std::vector<size_t> indices_to_remove;
+        for (size_t index = 0; index < densities.size(); index++)
         {
-            indices_to_remove.push_back(index);
+            if (densities.at(index) < threshold)
+            {
+                indices_to_remove.push_back(index);
+            }
         }
+        std::cout << "Removing " << indices_to_remove.size() << " vertices!" << std::endl;
+        output->RemoveVerticesByIndex(indices_to_remove);
     }
-    std::cout << "Removing " << indices_to_remove.size() << " vertices!" << std::endl;
-    output->RemoveVerticesByIndex(indices_to_remove);
 
     // Coutn number of tris
   size_t numTriangles = output->triangles_.size();
@@ -81,13 +86,23 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
    // Color Mapping
 
    // Post processing
+//    output->RemoveNonManifoldEdges();
+//    output->RemoveDegenerateTriangles();
+    output->RemoveUnreferencedVertices();
 
 
     // Poisson sampling
     {
         double init_factor = 5.0;
         const std::shared_ptr<o3d_PointCloud> c = cloudObject->GetPoints();
-        output->SamplePointsPoissonDisk(numTriangles / 2, init_factor, cloudObject->GetPoints());
+        if (c != nullptr)
+        {
+            auto pts = cloudObject->GetPoints();
+            if (pts->HasPoints())
+            {
+                output->SamplePointsPoissonDisk(numTriangles / 2, init_factor);
+            }
+        }
     }
 
     // Cluster removal
