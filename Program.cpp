@@ -180,8 +180,8 @@ void Reco3D::Program::Run()
 
     vis_.CreateVisualizerWindow("TestVisualizer", 1920, 540);
 
-    vis_.AddGeometry(trackerMesh);
-    vis_.AddGeometry(origin);
+//    vis_.AddGeometry(trackerMesh);
+//    vis_.AddGeometry(origin);
 
     do {
 // -----------------------------------------------------------------
@@ -195,8 +195,9 @@ void Reco3D::Program::Run()
             if (pointsVector.size() > 0)
             {
                 vis_.ClearGeometries();
-                AddTrackerOriginMeshes(trackerMesh, origin);
+//                AddTrackerOriginMeshes(trackerMesh, origin);
                 vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+                is_geometry_added = true;
             }
         }
         if (capture_frame)
@@ -236,9 +237,9 @@ void Reco3D::Program::Run()
         vis_.PollEvents();
 
         // Update tracker
-        trackerMesh->Transform(trackerPose.inverse());
+//        trackerMesh->Transform(trackerPose.inverse());
         trackerPose = sensor_->GetTrackerPose();
-        trackerMesh->Transform(trackerPose);
+//        trackerMesh->Transform(trackerPose);
 
         // Update camera position if captured frame
         // Hide/show trackers 
@@ -246,8 +247,8 @@ void Reco3D::Program::Run()
         {
             if (hidden_tracker)
             {
-                vis_.AddGeometry(trackerMesh);
-                vis_.AddGeometry(origin);
+//                vis_.AddGeometry(trackerMesh);
+//                vis_.AddGeometry(origin);
                 is_geometry_added = true;
                 hidden_tracker = false;
             }
@@ -256,8 +257,8 @@ void Reco3D::Program::Run()
         {
             if (!hidden_tracker)
             {
-                vis_.RemoveGeometry(trackerMesh);
-                vis_.RemoveGeometry(origin);
+//                vis_.RemoveGeometry(trackerMesh);
+//                vis_.RemoveGeometry(origin);
                 is_geometry_added = true;
                 hidden_tracker = true;
             }

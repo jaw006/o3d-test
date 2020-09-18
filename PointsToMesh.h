@@ -11,8 +11,8 @@
 
 #define DOWNSAMPLE_VOXEL_SIZE 0.01
 #define MAX_POINT_COUNT 50000
-#define MIN_POINT_COUNT 200
-#define MAX_CAPTURES 10000
+#define MIN_POINT_COUNT 1000
+#define MAX_CAPTURES 1000
 
 namespace Reco3D {
     // Vector of multiple points objects

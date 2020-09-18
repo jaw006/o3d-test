@@ -38,14 +38,14 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Mesh with default parameters - Poisson reconstruction
     // 12 is good, 8 is faster
-    uint64_t depth = 10;
+    uint64_t depth = 8;
     std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
              open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
     std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
     std::vector<double> densities = std::get<std::vector<double>>(tuple_result);
 
-    output->ComputeVertexNormals();
-    output->ComputeTriangleNormals();
+//    output->ComputeVertexNormals();
+//    output->ComputeTriangleNormals();
 
     // Remove vertices created that fall below 0.01 quantile
     // http://www.open3d.org/docs/release/tutorial/Advanced/surface_reconstruction.html
@@ -72,16 +72,16 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     // Coutn number of tris
   size_t numTriangles = output->triangles_.size();
 
-    // Decimate
- //  size_t decimationFactor = 2;
- //  size_t numTrianglesDecimated = numTriangles / decimationFactor;
- //  std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
- //  output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
-
-    if (!output->HasVertexNormals() || !output->HasTriangleNormals())
-    {
-        output = std::make_shared<o3d_TriMesh>(output->ComputeVertexNormals().ComputeTriangleNormals());
-    }
+//    // Decimate
+//  size_t decimationFactor = 2;
+//  size_t numTrianglesDecimated = numTriangles / decimationFactor;
+//  std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
+//  output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
+//
+//    if (!output->HasVertexNormals() || !output->HasTriangleNormals())
+//    {
+//        output = std::make_shared<o3d_TriMesh>(output->ComputeVertexNormals().ComputeTriangleNormals());
+//    }
 
    // Color Mapping
 
@@ -134,8 +134,8 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Smooth
     {
-//        int num_iterations = 2;
-//        output->FilterSmoothSimple(num_iterations);
+        int num_iterations = 2;
+        output->FilterSmoothSimple(num_iterations);
     }
 
     return output;
@@ -288,7 +288,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     points->SetPose(mtx);
 
     // Registration
-    bool doRegistration = false;
+    bool doRegistration = true;
     if (doRegistration)
     {
         RegisterPoints(points);
@@ -306,7 +306,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 
 void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& points)
 {
-    if (Count() > 0)
+    if (Count() > 2)
     {
         bool transformed = false;
         int transformationCount = 0;
@@ -315,50 +315,61 @@ void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& p
         auto& source = points;
 
         // Break on transformed being true
-        for (auto cloudIt = pointsVector_.rbegin(); (cloudIt != pointsVector_.rend()) && (!transformed); cloudIt++)
+        for (auto cloudIt = pointsVector_.rbegin() + 1; (cloudIt+1 != pointsVector_.rend()) && (!transformed); cloudIt++)
         {
-            auto& target = *cloudIt;
-            double notGoodRMSE = 0.2;
-            double goodEnoughRMSE = 0.025;
-            double excellentRMSE = 0.01;
-
-            auto existingRegResults = EvaluateCurrentRegistration(source, target, regMtx);
-            double& currentRMSE = existingRegResults.inlier_rmse_;
-            if (currentRMSE > notGoodRMSE)
+            if (cloudIt == pointsVector_.rbegin() || cloudIt == pointsVector_.rend())
             {
-                std::cout << "Current point cloud is not a good match for ICP, continuing." << std::endl;
                 continue;
             }
-            if (currentRMSE < excellentRMSE)
-            {
-                std::cout << "Current RMSE " << currentRMSE << " is good enough." << std::endl;
-                continue;
-            }
+            auto& source = *cloudIt;
+            auto& nextCloud = *(cloudIt+1);
+            auto& prevCloud = *(cloudIt-1);
+            std::vector<std::shared_ptr<Reco3D::PointCloud>> compareClouds{ nextCloud, prevCloud };
 
-            // Compute new registration
-            auto newRegResult = RegisterPointsICP(source, target, regMtx);
-            double& newRMSE = newRegResult.inlier_rmse_;
-            if (newRMSE < currentRMSE && newRMSE < goodEnoughRMSE)
+            for (auto cloud : compareClouds)
             {
-                std::cout << "Transforming point cloud based on new reg results" << std::endl;
-                source->GetPoints()->Transform(newRegResult.transformation_);
-                transformMtx = newRegResult.transformation_ * transformMtx;
-                transformationCount++;
-                //                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
-                //                regMtx *= newRegResult.transformation_;
-            }
-            else
-            {
-                std::cout << "Discarding new registration results." << std::endl;
-            }
-            if (newRMSE < goodEnoughRMSE)
-            {
-                transformed = true;
+                auto& target = cloud;
+                double notGoodRMSE = 0.2;
+                double goodEnoughRMSE = 0.025;
+                double excellentRMSE = 0.01;
+                auto existingRegResults = EvaluateCurrentRegistration(source, target, regMtx);
+                double& currentRMSE = existingRegResults.inlier_rmse_;
+                if (currentRMSE > notGoodRMSE)
+                {
+                    std::cout << "Current point cloud is not a good match for ICP, continuing." << std::endl;
+                    continue;
+                }
+                if (currentRMSE < excellentRMSE)
+                {
+                    std::cout << "Current RMSE " << currentRMSE << " is good enough." << std::endl;
+                    continue;
+                }
+
+                // Compute new registration
+                auto newRegResult = RegisterPointsICP(source, target, regMtx);
+                double& newRMSE = newRegResult.inlier_rmse_;
+                if (newRMSE < currentRMSE && newRMSE < goodEnoughRMSE)
+                {
+                    std::cout << "Transforming point cloud based on new reg results" << std::endl;
+                    source->GetPoints()->Transform(newRegResult.transformation_);
+                    transformMtx = newRegResult.transformation_ * transformMtx;
+                    transformationCount++;
+                    //                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
+                    //                regMtx *= newRegResult.transformation_;
+                }
+                else
+                {
+                    std::cout << "Discarding new registration results." << std::endl;
+                }
+                if (newRMSE < goodEnoughRMSE)
+                {
+                    transformed = true;
+                }
             }
         }
 
         // Do final transformation
-        source->GetPoints()->Transform(regMtx);
+//        source->GetPoints()->Transform(regMtx);
         std::cout << "Transformed point cloud " << transformationCount << " times." << std::endl;
         std::cout << "Final reg mtx:\n" << transformMtx << std::endl;
 
