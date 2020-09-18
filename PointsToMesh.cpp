@@ -123,8 +123,14 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 size_t Reco3D::PointsVector::SumPoints()
 {
     size_t sum = 0;
-    for (auto cloud : pointsVector_)
+    for (auto cloudIt = pointsVector_.begin(); cloudIt != pointsVector_.end(); cloudIt++)
     {
+        auto cloud = *cloudIt;
+        if (cloud == nullptr)
+        {
+            pointsVector_.erase(cloudIt);
+            continue;
+        }
         sum += cloud->GetPoints()->points_.size();
     }
     std::cout << "Total point count: " << sum << std::endl;
@@ -133,23 +139,34 @@ size_t Reco3D::PointsVector::SumPoints()
 
 void Reco3D::PointsVector::ClampMaxPointsSize()
 {
-    size_t maxPoints = 100000;
-    size_t minPoints = 1000;
+    const size_t maxPoints = MAX_POINT_COUNT;
+    const size_t minPoints = MIN_POINT_COUNT;
     size_t totalPoints = SumPoints();
     if (totalPoints > maxPoints)
     {
-        for (auto cloud : pointsVector_)
+        for (auto cloudIt = pointsVector_.begin(); cloudIt != pointsVector_.end(); cloudIt++)
         {
-            int currentPointCount = cloud->GetPoints()->points_.size();
-            float fractionOfTotal = (float)currentPointCount / (float)totalPoints;
-            int targetPointCount = (int)(maxPoints * fractionOfTotal);
-            int downsampleFactor = currentPointCount / targetPointCount;
-            std::cout << "Downsampling cloud with " << 
-                currentPointCount << "points to " << 
-                targetPointCount << " points." << std::endl;
-            if (downsampleFactor > 1 && targetPointCount > minPoints)
+            auto cloud = *cloudIt;
+            if (cloud != nullptr)
             {
-                cloud->SetPoints(cloud->GetPoints()->UniformDownSample(downsampleFactor));
+
+                int currentPointCount = cloud->GetPoints()->points_.size();
+                float fractionOfTotal = (float)currentPointCount / (float)totalPoints;
+                int targetPointCount = (int)(maxPoints * fractionOfTotal);
+                int downsampleFactor = currentPointCount / targetPointCount;
+                std::cout << "Downsampling cloud with " << 
+                    currentPointCount << "points to " << 
+                    targetPointCount << " points." << std::endl;
+                if (downsampleFactor > 1 && targetPointCount > minPoints)
+                {
+                    cloud->SetPoints(cloud->GetPoints()->UniformDownSample(downsampleFactor));
+                }
+                if (targetPointCount < minPoints)
+                {
+                    cloudIt->reset();
+                    pointsVector_.erase(cloudIt);
+                    cloud = nullptr;
+                }
             }
         }
     }
