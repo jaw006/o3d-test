@@ -212,68 +212,38 @@ void Reco3D::Program::Run()
                 // Add point cloud or triangle mesh
                 if(!make_triangle_mesh)
                 {
-//                    std::cout << "Adding point cloud!" << std::endl;
                     auto pointsVector = captureSet_->GetPointsVector();
                     // Add last created point cloud
                     auto lastAddedPoints = (pointsVector.front());
                     vis_.AddGeometry(lastAddedPoints->GetPoints());
                     // Set origin to camera pose
-                    SetGeometryPose(*origin, originPose, lastAddedPoints->GetPose());
+//                    SetGeometryPose(*origin, originPose, lastAddedPoints->GetPose());
                 }
-//                else
-//                {
-//                    {
-////                        std::cout << "Adding triangle mesh!" << std::endl;
-//                        vis_.ClearGeometries();
-//                        AddTrackerOriginMeshes(trackerMesh, origin);
-//                        vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
-//                    }
-//                }
                 is_geometry_added = true;
-//                std::cout << "Done!" << std::endl;
-
             }
         }
-
-        // TRACKER POSE
-//        Eigen::Matrix4d trackerPose = sensor_->GetTrackerPose();
-//        std::cout << trackerPose << std::endl;
 // -----------------------------------------------------------------
 // RENDER
 // -----------------------------------------------------------------
         if (update_render)
         {
-//            std::cout << "Updating geometry!" << std::endl;
             if (is_geometry_added)
             {
-//                vis_.UpdateGeometry(captureSet_->GetCombinedTriangleMesh());
                 vis_.UpdateGeometry();
             }
             update_render = false;
         }
-        // Update tracker
-        
         vis_.UpdateGeometry();
         vis_.PollEvents();
 
+        // Update tracker
         // Update camera position if captured frame
         if (update_camera)
         {
             auto view = vis_.GetViewControl();
-//            Eigen::Vector3d newCameraPos = -cameraPos;
             view.SetViewMatrices(trackerPose.inverse());
-
- //           Eigen::Matrix3d trackerRot = trackerPose.topLeftCorner(3, 3);
- //           trackerRot.transposeInPlace();
- //           Eigen::Vector3d front = trackerRot * Eigen::Vector3d::UnitZ();
- //           front.normalize();
- //           front *= 10.0;
- //           Eigen::Vector3d up = (trackerRot * Eigen::Vector3d::UnitY()).normalized();
- //           vis_.GetViewControl().SetLookat(front);
- //           vis_
- //           vis_.GetViewControl().SetUp(up);
         }
-        // Coordinates
+        // Hide/show trackers 
         if (show_tracker)
         {
             if (hidden_tracker)
