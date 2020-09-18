@@ -37,5 +37,8 @@ namespace Reco3D
         std::shared_ptr<PointCloud> GetCombinedPointCloud();
         const std::vector<std::shared_ptr<Reco3D::PointCloud>>& GetPointsVector();
         std::shared_ptr<o3d_TriMesh> GetCombinedTriangleMesh();
+    protected:
+        void ClampMaxPointsSize();
+        size_t SumPoints();
     };
 }

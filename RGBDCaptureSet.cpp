@@ -65,6 +65,9 @@ void Reco3D::RGBDCaptureSet::AddCapture(std::shared_ptr<RGBDCapture_t> capture)
     // Insert capture and points
     pointsVector_->AddPoints(newPoints);
     captures_.push_back(capture);
+
+    // Clamp
+    ClampMaxPointsSize();
 }
 
 // Remove all clouds
@@ -82,6 +85,8 @@ size_t Reco3D::RGBDCaptureSet::Count()
 {
     return captures_.size();
 }
+
+
 
 std::shared_ptr<Reco3D::PointCloud> Reco3D::RGBDCaptureSet::GetCombinedPointCloud()
 {
@@ -105,4 +110,14 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::RGBDCaptureSet::GetCombinedTriangle
 //    }
 
     return mesh;
+}
+
+void Reco3D::RGBDCaptureSet::ClampMaxPointsSize()
+{
+    pointsVector_->ClampMaxPointsSize();
+}
+
+size_t Reco3D::RGBDCaptureSet::SumPoints()
+{
+    return pointsVector_->SumPoints();
 }

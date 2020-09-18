@@ -10,6 +10,8 @@
 #include "PointCloud.h"
 
 #define DOWNSAMPLE_VOXEL_SIZE 0.01
+#define MAX_POINT_COUNT 100000
+#define MIN_POINT_COUNT 100
 
 namespace Reco3D {
     // Vector of multiple points objects
@@ -31,6 +33,8 @@ namespace Reco3D {
         size_t Count();
 
         std::shared_ptr<Reco3D::PointCloud> GetCombinedPoints();
+        size_t SumPoints();
+        void ClampMaxPointsSize();
         const std::vector<std::shared_ptr<Reco3D::PointCloud>>& GetPointsVector() { return pointsVector_; };
         std::shared_ptr<Reco3D::PointCloud> GetSourcePointCloud();
         open3d::registration::RegistrationResult RegisterPointsICP(std::shared_ptr<Reco3D::PointCloud> source, std::shared_ptr<Reco3D::PointCloud> target, Reco3D::ImagePose& target_pose);

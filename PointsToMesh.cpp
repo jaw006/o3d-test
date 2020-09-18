@@ -120,6 +120,41 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
     return combinedPoints_;
 }
 
+size_t Reco3D::PointsVector::SumPoints()
+{
+    size_t sum = 0;
+    for (auto cloud : pointsVector_)
+    {
+        sum += cloud->GetPoints()->points_.size();
+    }
+    std::cout << "Total point count: " << sum << std::endl;
+    return sum;
+}
+
+void Reco3D::PointsVector::ClampMaxPointsSize()
+{
+    size_t maxPoints = 100000;
+    size_t minPoints = 1000;
+    size_t totalPoints = SumPoints();
+    if (totalPoints > maxPoints)
+    {
+        for (auto cloud : pointsVector_)
+        {
+            int currentPointCount = cloud->GetPoints()->points_.size();
+            float fractionOfTotal = (float)currentPointCount / (float)totalPoints;
+            int targetPointCount = (int)(maxPoints * fractionOfTotal);
+            int downsampleFactor = currentPointCount / targetPointCount;
+            std::cout << "Downsampling cloud with " << 
+                currentPointCount << "points to " << 
+                targetPointCount << " points." << std::endl;
+            if (downsampleFactor > 1 && targetPointCount > minPoints)
+            {
+                cloud->SetPoints(cloud->GetPoints()->UniformDownSample(downsampleFactor));
+            }
+        }
+    }
+}
+
 // Adds points to vector
 // https://stackoverflow.com/questions/58727178/having-trouble-aligning-2d-lidar-pointcloud-to-match-the-coordinate-system-of-ht
 // https://math.stackexchange.com/questions/1234948/inverse-of-a-rigid-transformation
