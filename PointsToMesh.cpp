@@ -133,7 +133,7 @@ size_t Reco3D::PointsVector::SumPoints()
         }
         sum += cloud->GetPoints()->points_.size();
     }
-    std::cout << "Total point count: " << sum << std::endl;
+//    std::cout << "Total point count: " << sum << std::endl;
     return sum;
 }
 
@@ -150,13 +150,13 @@ void Reco3D::PointsVector::ClampMaxPointsSize()
             if (cloud != nullptr)
             {
 
-                int currentPointCount = cloud->GetPoints()->points_.size();
+                int currentPointCount = (int) cloud->GetPoints()->points_.size();
                 float fractionOfTotal = (float)currentPointCount / (float)totalPoints;
                 int targetPointCount = (int)(maxPoints * fractionOfTotal);
                 int downsampleFactor = currentPointCount / targetPointCount;
-                std::cout << "Downsampling cloud with " << 
-                    currentPointCount << "points to " << 
-                    targetPointCount << " points." << std::endl;
+//                std::cout << "Downsampling cloud with " << 
+//                    currentPointCount << "points to " << 
+//                    targetPointCount << " points." << std::endl;
                 if (downsampleFactor > 1 && targetPointCount > minPoints)
                 {
                     cloud->SetPoints(cloud->GetPoints()->UniformDownSample(downsampleFactor));
@@ -169,6 +169,7 @@ void Reco3D::PointsVector::ClampMaxPointsSize()
                 }
             }
         }
+        std::cout << "Total point cloud downsampled from" << totalPoints << " to  " << SumPoints() << " points." << std::endl;
     }
 }
 
@@ -214,13 +215,13 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 //    Eigen::Matrix4d cam_mtx = inversePosePositionMatrix * inverseQuatRotationMtx * aff.matrix().inverse();
 //    Eigen::Matrix4d cam_mtx = inversePosePositionMatrix * inverseQuatRotationMtx * aff.matrix().inverse();
     Eigen::Matrix4d transformedPose = pose;
-    std::cout << "Initial Pose: " << mtx << std::endl;
+//    std::cout << "Initial Pose: " << mtx << std::endl;
 //    std::cout << "Camera Pose: " << cam_mtx << std::endl;
 //    std::cout << "Transformed Pose:\n " << mtx << std::endl;
 
     // Do initial transformation
     points->GetPoints()->Transform(mtx);
-    points->SetPose(mtx.inverse());
+//    points->SetPose(mtx.inverse());
 
     // Registration
     bool doRegistration = false;

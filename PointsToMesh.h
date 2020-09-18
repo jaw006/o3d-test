@@ -10,8 +10,8 @@
 #include "PointCloud.h"
 
 #define DOWNSAMPLE_VOXEL_SIZE 0.01
-#define MAX_POINT_COUNT 1000000
-#define MIN_POINT_COUNT 1000
+#define MAX_POINT_COUNT 100000
+#define MIN_POINT_COUNT 10000
 
 namespace Reco3D {
     // Vector of multiple points objects
