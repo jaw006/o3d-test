@@ -25,3 +25,9 @@ Reco3D::PointCloud::~PointCloud()
 {
 
 }
+
+void Reco3D::PointCloud::SetPose(ImagePose pose)
+{
+    capture_->pose_ = pose;
+    capture_->camPose_.extrinsic_ = pose;
+}

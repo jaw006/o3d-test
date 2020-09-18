@@ -142,6 +142,9 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     Eigen::Matrix3d quatRotation = open3d::geometry::Geometry3D::GetRotationMatrixFromQuaternion(quat);
     Eigen::Matrix4d quatRotationMtx = Eigen::Matrix4d::Identity();
     quatRotationMtx.topLeftCorner(3, 3) = quatRotation;
+    Eigen::Matrix4d inverseQuatRotationMtx = Eigen::Matrix4d::Identity();
+    inverseQuatRotationMtx.topLeftCorner(3, 3) = quatRotation;
+    inverseQuatRotationMtx.transposeInPlace();
 
     Eigen::Vector3d posePosition = { pose(0,3), pose(1,3), pose(2,3) };
     ImagePose posePositionMatrix = ExtractPoseTransform(pose);
@@ -152,18 +155,35 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 
     // Transform points by rotating 180 on Z axis and -90 on Y axis
     const Eigen::Affine3d aff = Eigen::Affine3d::Identity() * Eigen::AngleAxisd(-M_PI/2.0, Eigen::Vector3d::UnitX());
-//    Eigen::Matrix4d mtx = Eigen::Matrix4d::Identity() * aff.matrix() * posePositionMatrix * inversePosePositionMatrix * quatRotationMtx * posePositionMatrix;
+    const Eigen::Affine3d aff_cam =  aff * Eigen::AngleAxisd(-M_PI / 2.0, Eigen::Vector3d::UnitZ());
     Eigen::Matrix4d mtx = posePositionMatrix * quatRotationMtx * aff.matrix();
-    std::cout << "Pose: " << pose << std::endl;
-    std::cout << "Tform Mtx: " << mtx << std::endl;
-//    points->GetPoints()->Transform(aff.matrix());
-//    points->GetPoints()->Transform(posePositionMatrix);
-//    points->GetPoints()->Rotate(quatRotation, posePosition);
+    Eigen::Matrix4d cam_mtx = mtx * inverseQuatRotationMtx;
+
+//    Eigen::Matrix4d cam_mtx = inversePosePositionMatrix * inverseQuatRotationMtx * aff.matrix().inverse();
+//    Eigen::Matrix4d cam_mtx = inversePosePositionMatrix * inverseQuatRotationMtx * aff.matrix().inverse();
+    Eigen::Matrix4d transformedPose = pose;
+    std::cout << "Initial Pose: " << mtx << std::endl;
+//    std::cout << "Camera Pose: " << cam_mtx << std::endl;
+//    std::cout << "Transformed Pose:\n " << mtx << std::endl;
 
     // Do initial transformation
     points->GetPoints()->Transform(mtx);
+    points->SetPose(mtx.inverse());
 
     // Registration
+    bool doRegistration = false;
+    if (doRegistration)
+    {
+        RegisterPoints(points);
+    }
+
+    // Add to vector
+    pointsVector_.push_back(points);
+    return true;
+}
+
+void Reco3D::PointsVector::RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& points)
+{
     if (Count() > 0)
     {
         bool transformed = false;
@@ -194,7 +214,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
             }
 
             // Compute new registration
-            auto newRegResult= RegisterPointsICP(source, target, regMtx);
+            auto newRegResult = RegisterPointsICP(source, target, regMtx);
             double& newRMSE = newRegResult.inlier_rmse_;
             if (newRMSE < currentRMSE && newRMSE < goodEnoughRMSE)
             {
@@ -202,8 +222,8 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
                 source->GetPoints()->Transform(newRegResult.transformation_);
                 transformMtx = newRegResult.transformation_ * transformMtx;
                 transformationCount++;
-//                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
-//                regMtx *= newRegResult.transformation_;
+                //                auto postTransformResults = EvaluateCurrentRegistration(source, target, regMtx);
+                //                regMtx *= newRegResult.transformation_;
             }
             else
             {
@@ -225,10 +245,6 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
             std::cout << "Failed to find better ICP registration" << std::endl;
         }
     }
-
-    // Add to vector
-    pointsVector_.push_back(points);
-    return true;
 }
 
 open3d::registration::RegistrationResult Reco3D::PointsVector::EvaluateCurrentRegistration(std::shared_ptr<Reco3D::PointCloud>& source, std::shared_ptr<Reco3D::PointCloud>& target, Eigen::Matrix4d& m)

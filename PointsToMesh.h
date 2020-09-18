@@ -26,6 +26,7 @@ namespace Reco3D {
         ~PointsVector();
 
         bool AddPoints(std::shared_ptr<Reco3D::PointCloud> points);
+        void RegisterPoints(std::shared_ptr<Reco3D::PointCloud>& points);
         open3d::registration::RegistrationResult EvaluateCurrentRegistration(std::shared_ptr<Reco3D::PointCloud>& source, std::shared_ptr<Reco3D::PointCloud>& target, Eigen::Matrix4d& m);
         size_t Count();
 

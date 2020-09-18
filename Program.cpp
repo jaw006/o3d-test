@@ -57,6 +57,13 @@ void Reco3D::Program::ExportAllPoints()
     }
 }
 
+void SetGeometryPose(open3d::geometry::Geometry3D& object, Eigen::Matrix4d& pose, Eigen::Matrix4d& newPose)
+{
+    object.Transform(pose.inverse());
+    pose = newPose;
+    object.Transform(newPose);
+}
+
 void Reco3D::Program::AddTrackerOriginMeshes(const std::shared_ptr<open3d::geometry::TriangleMesh>& trackerMesh, const std::shared_ptr<open3d::geometry::TriangleMesh>& origin)
 {
     vis_.AddGeometry(trackerMesh);
@@ -82,6 +89,7 @@ void Reco3D::Program::Run()
 
     // TRACKER VISUALIZATION 
     Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d originPose = Eigen::Matrix4d::Identity();
     std::shared_ptr<o3d_TriMesh> origin = open3d::geometry::TriangleMesh::CreateCoordinateFrame(2.0);
     std::shared_ptr<o3d_TriMesh> trackerMesh = open3d::geometry::TriangleMesh::CreateCoordinateFrame();
 
@@ -180,7 +188,10 @@ void Reco3D::Program::Run()
                     std::cout << "Adding point cloud!" << std::endl;
                     auto pointsVector = captureSet_->GetPointsVector();
                     // Add last created point cloud
-                    vis_.AddGeometry((pointsVector.back())->GetPoints());
+                    auto lastAddedPoints = (pointsVector.back());
+                    vis_.AddGeometry(lastAddedPoints->GetPoints());
+                    // Set origin to camera pose
+                    SetGeometryPose(*origin, originPose, lastAddedPoints->GetPose());
                 }
                 else
                 {
@@ -216,17 +227,16 @@ void Reco3D::Program::Run()
         // Update tracker
         if (show_tracker)
         {
-            trackerMesh->Transform(trackerPose.inverse());
-            trackerPose = sensor_->GetTrackerPose();
-            trackerMesh->Transform(trackerPose);
+            SetGeometryPose(*trackerMesh, trackerPose, sensor_->GetTrackerPose());
         }
         
         vis_.UpdateGeometry();
         vis_.PollEvents();
+
         // Update camera position if captured frame
         if (update_camera)
         {
-//            vis_.GetViewControl().SetViewMatrices(viewMtx);
+            vis_.GetViewControl().GetModelMatrix();
         }
         vis_.UpdateRender();
     } while (!flag_exit);

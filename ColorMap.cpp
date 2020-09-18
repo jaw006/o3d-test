@@ -33,10 +33,14 @@ void Reco3D::ColorMap::ColorMapOptimization(o3d_TriMesh& mesh, CaptureVector& ca
 {
     CameraPoseTrajectory camPoseTrajectory = ConstructTrajectoryFromCaptures(captures_);
     ImagePyramid pyramid = ConstructImagePyramidFromCaptures(captures_);
-//    open3d::color_map::ColorMapOptimizationOption option();
+    open3d::color_map::ColorMapOptimizationOption cmoOptions;
+    cmoOptions.maximum_allowable_depth_ = 100000.0;
+    cmoOptions.depth_threshold_for_discontinuity_check_ = 100000.0;
+    cmoOptions.depth_threshold_for_visibility_check_ = 100000.0;
+    cmoOptions.maximum_iteration_ = 0;
     try
     {
-        open3d::color_map::ColorMapOptimization(mesh, pyramid, camPoseTrajectory);
+        open3d::color_map::ColorMapOptimization(mesh, pyramid, camPoseTrajectory, cmoOptions);
     }
     catch(char *e)
     {
