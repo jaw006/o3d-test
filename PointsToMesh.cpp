@@ -83,9 +83,9 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     return output;
 }
 
-Reco3D::PointsVector::PointsVector() :
-    combinedPoints_(std::shared_ptr<Reco3D::PointCloud>(new Reco3D::PointCloud()))
+Reco3D::PointsVector::PointsVector() : combinedPoints_(std::shared_ptr<Reco3D::PointCloud>(new Reco3D::PointCloud()))
 {
+    pointsVector_.reserve(sizeof(std::shared_ptr<Reco3D::PointCloud>) * (size_t)MAX_CAPTURES);
 }
 
 Reco3D::PointsVector::~PointsVector()
@@ -161,15 +161,14 @@ void Reco3D::PointsVector::ClampMaxPointsSize()
                 {
                     cloud->SetPoints(cloud->GetPoints()->UniformDownSample(downsampleFactor));
                 }
-                if (targetPointCount < minPoints)
-                {
-                    cloudIt->reset();
-                    pointsVector_.erase(cloudIt);
-                    cloud = nullptr;
-                }
+//                if (targetPointCount < minPoints)
+//                {
+//                    cloud.reset();
+//                    cloud = nullptr;
+//                }
             }
         }
-        std::cout << "Total point cloud downsampled from" << totalPoints << " to  " << SumPoints() << " points." << std::endl;
+//        std::cout << "Total point cloud downsampled from" << totalPoints << " to  " << SumPoints() << " points." << std::endl;
     }
 }
 
@@ -231,7 +230,12 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
     }
 
     // Add to vector
-    pointsVector_.push_back(points);
+    if (pointsVector_.size() > MAX_CAPTURES)
+    {
+        pointsVector_.pop_back();
+    }
+    pointsVector_.insert(pointsVector_.begin(),points);
+
     return true;
 }
 

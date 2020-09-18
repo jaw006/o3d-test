@@ -114,6 +114,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::RGBDCaptureSet::GetCombinedTriangle
 
 void Reco3D::RGBDCaptureSet::ClampMaxPointsSize()
 {
+    // To prevent output log spam
     pointsVector_->ClampMaxPointsSize();
 }
 

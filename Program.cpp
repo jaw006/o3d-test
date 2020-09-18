@@ -75,7 +75,7 @@ void Reco3D::Program::AddTrackerOriginMeshes(const std::shared_ptr<open3d::geome
 void Reco3D::Program::Run()
 {
     // Verbosity level
-    open3d::utility::SetVerbosityLevel(open3d::utility::VerbosityLevel::Debug);
+//    open3d::utility::SetVerbosityLevel(open3d::utility::VerbosityLevel::Debug);
 
     // Status booleans
     bool flag_exit = false;
@@ -170,7 +170,7 @@ void Reco3D::Program::Run()
             {
                 return;
             }
-            std::cout << "Capturing frame!" << std::endl;
+//            std::cout << "Capturing frame!" << std::endl;
             auto im_rgbd = sensor_->CaptureFrame();
             if (im_rgbd == nullptr) {
                 utility::LogInfo("Invalid capture, skipping this frame");
@@ -185,10 +185,10 @@ void Reco3D::Program::Run()
                 // Add point cloud or triangle mesh
                 if(!make_triangle_mesh)
                 {
-                    std::cout << "Adding point cloud!" << std::endl;
+//                    std::cout << "Adding point cloud!" << std::endl;
                     auto pointsVector = captureSet_->GetPointsVector();
                     // Add last created point cloud
-                    auto lastAddedPoints = (pointsVector.back());
+                    auto lastAddedPoints = (pointsVector.front());
                     vis_.AddGeometry(lastAddedPoints->GetPoints());
                     // Set origin to camera pose
                     SetGeometryPose(*origin, originPose, lastAddedPoints->GetPose());
@@ -196,14 +196,14 @@ void Reco3D::Program::Run()
                 else
                 {
                     {
-                        std::cout << "Adding triangle mesh!" << std::endl;
+//                        std::cout << "Adding triangle mesh!" << std::endl;
                         vis_.ClearGeometries();
                         AddTrackerOriginMeshes(trackerMesh, origin);
                         vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
                     }
                 }
                 is_geometry_added = true;
-                std::cout << "Done!" << std::endl;
+//                std::cout << "Done!" << std::endl;
 
             }
         }
@@ -216,7 +216,7 @@ void Reco3D::Program::Run()
 // -----------------------------------------------------------------
         if (update_render)
         {
-            std::cout << "Updating geometry!" << std::endl;
+//            std::cout << "Updating geometry!" << std::endl;
             if (is_geometry_added)
             {
 //                vis_.UpdateGeometry(captureSet_->GetCombinedTriangleMesh());
