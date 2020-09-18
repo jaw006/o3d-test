@@ -101,7 +101,7 @@ void Reco3D::Program::Run()
         });
     vis_.RegisterKeyCallback(GLFW_KEY_A,
         [&](visualization::Visualizer* vis) {
-            capture_frame = true;
+            capture_frame = !capture_frame;
 //            newSource = true;
             return false;
         });
@@ -177,7 +177,7 @@ void Reco3D::Program::Run()
                 continue;
             }
             else {
-                capture_frame = false;
+//                capture_frame = false;
                 update_render = true;
                 update_camera = true;
                 captureSet_->AddCapture(im_rgbd);
