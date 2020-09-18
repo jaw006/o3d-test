@@ -85,6 +85,7 @@ void Reco3D::Program::Run()
     bool clear = false;
     bool update_render = false;
     bool show_tracker = true;
+    bool hidden_tracker = false;
     bool update_camera = true;
 
     // TRACKER VISUALIZATION 
@@ -272,9 +273,25 @@ void Reco3D::Program::Run()
  //           vis_
  //           vis_.GetViewControl().SetUp(up);
         }
+        // Coordinates
         if (show_tracker)
         {
+            if (hidden_tracker)
+            {
+                vis_.AddGeometry(trackerMesh);
+                vis_.AddGeometry(origin);
+                hidden_tracker = false;
+            }
             SetGeometryPose(*trackerMesh, trackerPose, sensor_->GetTrackerPose());
+        }
+        else
+        {
+            if (!hidden_tracker)
+            {
+                vis_.RemoveGeometry(trackerMesh);
+                vis_.RemoveGeometry(origin);
+                hidden_tracker = true;
+            }
         }
         vis_.UpdateRender();
     } while (!flag_exit);

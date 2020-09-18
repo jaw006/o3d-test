@@ -111,11 +111,15 @@ Eigen::Matrix4d ExtractPoseRotation(Eigen::Matrix4d& m)
 
 std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 {
+    const double hiddenPtRemovalRadius = 100.0;
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
     for (auto points : pointsVector_)
     {
+        // Post process points
         points->GetPoints()->EstimateNormals();
         points->GetPoints()->OrientNormalsTowardsCameraLocation();
+        points->GetPoints()->HiddenPointRemoval(Eigen::Vector3d::Zero(), hiddenPtRemovalRadius);
+
         *addedPts = *addedPts + *points->GetPoints();
     }
     combinedPoints_->SetPoints(addedPts);
