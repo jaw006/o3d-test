@@ -85,11 +85,12 @@ void Reco3D::Program::Run()
     bool clear = false;
     bool update_render = false;
     bool show_tracker = true;
-    bool update_camera = false;
+    bool update_camera = true;
 
     // TRACKER VISUALIZATION 
     Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d originPose = Eigen::Matrix4d::Identity();
+    Eigen::Vector3d cameraPos{ 0.0,0.0,0.0 };
     std::shared_ptr<o3d_TriMesh> origin = open3d::geometry::TriangleMesh::CreateCoordinateFrame(2.0);
     std::shared_ptr<o3d_TriMesh> trackerMesh = open3d::geometry::TriangleMesh::CreateCoordinateFrame();
 
@@ -105,8 +106,21 @@ void Reco3D::Program::Run()
 //            newSource = true;
             return false;
         });
+    vis_.RegisterKeyCallback(GLFW_KEY_U,
+        [&](visualization::Visualizer* vis) {
+            update_camera = !update_camera;
+//            newSource = true;
+            return false;
+        });
+    vis_.RegisterKeyCallback(GLFW_KEY_L,
+        [&](visualization::Visualizer* vis) {
+            vis->GetRenderOption().ToggleShadingOption();
+            vis->GetRenderOption().ToggleLightOn();
+            return false;
+        });
     vis_.RegisterKeyCallback(GLFW_KEY_M,
         [&](visualization::Visualizer* vis) {
+            capture_frame = false;
             make_triangle_mesh = !make_triangle_mesh;
             return false;
         });
@@ -164,6 +178,18 @@ void Reco3D::Program::Run()
 // -----------------------------------------------------------------
 // New simpler main loop 
 // -----------------------------------------------------------------
+        if(make_triangle_mesh)
+        {
+            make_triangle_mesh = false;
+
+            auto pointsVector = captureSet_->GetPointsVector();
+            if (pointsVector.size() > 0)
+            {
+                vis_.ClearGeometries();
+                AddTrackerOriginMeshes(trackerMesh, origin);
+                vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+            }
+        }
         if (capture_frame)
         {
             if (!sensor_)
@@ -193,15 +219,15 @@ void Reco3D::Program::Run()
                     // Set origin to camera pose
                     SetGeometryPose(*origin, originPose, lastAddedPoints->GetPose());
                 }
-                else
-                {
-                    {
-//                        std::cout << "Adding triangle mesh!" << std::endl;
-                        vis_.ClearGeometries();
-                        AddTrackerOriginMeshes(trackerMesh, origin);
-                        vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
-                    }
-                }
+//                else
+//                {
+//                    {
+////                        std::cout << "Adding triangle mesh!" << std::endl;
+//                        vis_.ClearGeometries();
+//                        AddTrackerOriginMeshes(trackerMesh, origin);
+//                        vis_.AddGeometry(captureSet_->GetCombinedTriangleMesh());
+//                    }
+//                }
                 is_geometry_added = true;
 //                std::cout << "Done!" << std::endl;
 
@@ -225,10 +251,6 @@ void Reco3D::Program::Run()
             update_render = false;
         }
         // Update tracker
-        if (show_tracker)
-        {
-            SetGeometryPose(*trackerMesh, trackerPose, sensor_->GetTrackerPose());
-        }
         
         vis_.UpdateGeometry();
         vis_.PollEvents();
@@ -236,7 +258,23 @@ void Reco3D::Program::Run()
         // Update camera position if captured frame
         if (update_camera)
         {
-            vis_.GetViewControl().GetModelMatrix();
+            auto view = vis_.GetViewControl();
+//            Eigen::Vector3d newCameraPos = -cameraPos;
+            view.SetViewMatrices(trackerPose.inverse());
+
+ //           Eigen::Matrix3d trackerRot = trackerPose.topLeftCorner(3, 3);
+ //           trackerRot.transposeInPlace();
+ //           Eigen::Vector3d front = trackerRot * Eigen::Vector3d::UnitZ();
+ //           front.normalize();
+ //           front *= 10.0;
+ //           Eigen::Vector3d up = (trackerRot * Eigen::Vector3d::UnitY()).normalized();
+ //           vis_.GetViewControl().SetLookat(front);
+ //           vis_
+ //           vis_.GetViewControl().SetUp(up);
+        }
+        if (show_tracker)
+        {
+            SetGeometryPose(*trackerMesh, trackerPose, sensor_->GetTrackerPose());
         }
         vis_.UpdateRender();
     } while (!flag_exit);

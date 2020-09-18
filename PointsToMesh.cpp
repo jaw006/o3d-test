@@ -37,7 +37,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Mesh with default parameters - Poisson reconstruction
     // 12 is good, 8 is faster
-    uint64_t depth = 16;
+    uint64_t depth = 8;
     std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
              open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
     std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
@@ -64,11 +64,11 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
     output->RemoveVerticesByIndex(indices_to_remove);
 
     // Decimate
-   size_t numTriangles = output->triangles_.size();
-   size_t decimationFactor = 2;
-   size_t numTrianglesDecimated = numTriangles / decimationFactor;
-   std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
-   output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
+ //  size_t numTriangles = output->triangles_.size();
+ //  size_t decimationFactor = 2;
+ //  size_t numTrianglesDecimated = numTriangles / decimationFactor;
+ //  std::cout << "Decimating " << numTriangles << " into " << numTrianglesDecimated << " triangles." << std::endl;
+ //  output->SimplifyQuadricDecimation((int)numTrianglesDecimated);
 
     if (!output->HasVertexNormals() || !output->HasTriangleNormals())
     {
@@ -78,7 +78,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
    // Color Mapping
 
    // Post processing
-   output->FilterSmoothSimple(2);
+//   output->FilterSmoothSimple(2);
 
     return output;
 }
@@ -114,6 +114,8 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
     std::shared_ptr<Reco3D::o3d_PointCloud> addedPts(new Reco3D::o3d_PointCloud());
     for (auto points : pointsVector_)
     {
+        points->GetPoints()->EstimateNormals();
+        points->GetPoints()->OrientNormalsTowardsCameraLocation();
         *addedPts = *addedPts + *points->GetPoints();
     }
     combinedPoints_->SetPoints(addedPts);
