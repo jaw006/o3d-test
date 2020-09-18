@@ -57,6 +57,12 @@ void Reco3D::Program::ExportAllPoints()
     }
 }
 
+void AddGeo(std::shared_ptr<open3d::geometry::Geometry3D>& geo, open3d::visualization::VisualizerWithKeyCallback& vis)
+{
+    vis.AddGeometry(geo);
+    std::cout << "Adding geometry" << std::endl;
+}
+
 void SetGeometryPose(open3d::geometry::Geometry3D& object, Eigen::Matrix4d& pose, Eigen::Matrix4d& newPose)
 {
     object.Transform(pose.inverse());
@@ -68,8 +74,8 @@ void Reco3D::Program::AddTrackerOriginMeshes(const std::shared_ptr<open3d::geome
 {
     vis_.AddGeometry(trackerMesh);
     vis_.AddGeometry(origin);
-    vis_.UpdateGeometry();
-    vis_.UpdateRender();
+//    vis_.UpdateGeometry();
+//    vis_.UpdateRender();
 }
 
 void Reco3D::Program::Run()
@@ -89,6 +95,8 @@ void Reco3D::Program::Run()
     bool update_camera = true;
 
     // TRACKER VISUALIZATION 
+
+    open3d::camera::PinholeCameraParameters cam;
     Eigen::Matrix4d trackerPose = Eigen::Matrix4d::Identity();
     Eigen::Matrix4d originPose = Eigen::Matrix4d::Identity();
     Eigen::Vector3d cameraPos{ 0.0,0.0,0.0 };
@@ -206,7 +214,6 @@ void Reco3D::Program::Run()
             else {
 //                capture_frame = false;
                 update_render = true;
-                update_camera = true;
                 captureSet_->AddCapture(im_rgbd);
 
                 // Add point cloud or triangle mesh
@@ -230,19 +237,19 @@ void Reco3D::Program::Run()
             if (is_geometry_added)
             {
                 vis_.UpdateGeometry();
+                is_geometry_added = false;
             }
             update_render = false;
         }
-        vis_.UpdateGeometry();
+
         vis_.PollEvents();
 
         // Update tracker
+        trackerMesh->Transform(trackerPose.inverse());
+        trackerPose = sensor_->GetTrackerPose();
+        trackerMesh->Transform(trackerPose);
+
         // Update camera position if captured frame
-        if (update_camera)
-        {
-            auto view = vis_.GetViewControl();
-            view.SetViewMatrices(trackerPose.inverse());
-        }
         // Hide/show trackers 
         if (show_tracker)
         {
@@ -252,7 +259,6 @@ void Reco3D::Program::Run()
                 vis_.AddGeometry(origin);
                 hidden_tracker = false;
             }
-            SetGeometryPose(*trackerMesh, trackerPose, sensor_->GetTrackerPose());
         }
         else
         {
@@ -262,6 +268,18 @@ void Reco3D::Program::Run()
                 vis_.RemoveGeometry(origin);
                 hidden_tracker = true;
             }
+        }
+        if (update_camera)
+        {
+            auto& view = vis_.GetViewControl();
+            view.ConvertToPinholeCameraParameters(cam);
+            Eigen::Matrix4d_u camPose = cam.extrinsic_;
+            Eigen::Matrix3d rotMat = trackerPose.topLeftCorner(3, 3);
+            Eigen::Vector3d position = trackerPose.topRightCorner(3, 1);
+            camPose.topRightCorner(3, 1) = position;
+            camPose.topLeftCorner(3, 3) = rotMat;
+            cam.extrinsic_ = camPose.inverse();
+            view.ConvertFromPinholeCameraParameters(cam);
         }
         vis_.UpdateRender();
     } while (!flag_exit);
@@ -283,3 +301,4 @@ void Reco3D::Program::AddSourcePointCloud(Reco3D::PointCloud& source, open3d::vi
 
 //    vis.AddGeometry(source.GetPoints());
 }
+    bool gotPose = false;

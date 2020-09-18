@@ -38,7 +38,7 @@ std::shared_ptr<Reco3D::o3d_TriMesh> Reco3D::PointsToMesh::ToMesh(std::shared_pt
 
     // Mesh with default parameters - Poisson reconstruction
     // 12 is good, 8 is faster
-    uint64_t depth = 12;
+    uint64_t depth = 10;
     std::tuple<std::shared_ptr<o3d_TriMesh>, std::vector<double>> tuple_result =
              open3d::geometry::TriangleMesh::CreateFromPointCloudPoisson(cloud,depth);
     std::shared_ptr<o3d_TriMesh> output = std::get<std::shared_ptr<o3d_TriMesh>>(tuple_result);
@@ -165,6 +165,7 @@ std::shared_ptr<Reco3D::PointCloud> Reco3D::PointsVector::GetCombinedPoints()
 
         *addedPts = *addedPts + *points->GetPoints();
     }
+    addedPts->EstimateNormals();
     combinedPoints_->SetPoints(addedPts);
     return combinedPoints_;
 }
@@ -269,7 +270,7 @@ bool Reco3D::PointsVector::AddPoints(std::shared_ptr<Reco3D::PointCloud> points)
 
     // Do initial transformation
     points->GetPoints()->Transform(mtx);
-//    points->SetPose(mtx.inverse());
+    points->SetPose(mtx);
 
     // Registration
     bool doRegistration = false;
