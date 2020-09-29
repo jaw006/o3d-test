@@ -157,6 +157,11 @@ void Reco3D::Program::Run()
             show_tracker = !show_tracker;
             return false;
         });
+    // Save Image
+    vis_.RegisterKeyCallback(GLFW_KEY_P,
+        [&](visualization::Visualizer* vis) {
+            return sensor_->SaveFrameToDisk();
+        });
 
     // Show backfaces
     vis_.GetRenderOption().ToggleMeshShowBackFace();

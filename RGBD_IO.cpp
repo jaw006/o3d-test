@@ -16,6 +16,38 @@ Reco3D::IO::RGBDSensor_KinectVive::~RGBDSensor_KinectVive()
 {
 }
 
+bool Reco3D::IO::RGBDSensor_KinectVive::SaveFrameToDisk()
+{
+    std::shared_ptr<Reco3D::RGBDCapture_t> capture(new Reco3D::RGBDCapture_t());
+    if (sensor_)
+    {
+        auto im_rgbd = sensor_->CaptureFrame(config_.enableAlignDepthWithColor_);
+        if (im_rgbd != nullptr)
+        {
+            time_t t = time(0);
+            std::string filename = "data/" + std::to_string(t);
+            std::string ext = ".png";
+            const int quality = 100;
+            open3d::geometry::Image& color = im_rgbd->color_;
+            open3d::geometry::Image& depth = im_rgbd->depth_;
+            std::shared_ptr<open3d::geometry::Image> depthFloat = depth.open3d::geometry::Image::ConvertDepthToFloatImage();
+            
+            std::cout << "Writing capture to disk!" << std::endl;
+            open3d::io::WriteImageToPNG(filename + "_color" + ext, color, quality);
+            open3d::io::WriteImageToPNG(filename + "_depth" + ext, *depthFloat, quality);
+            return true;
+        }
+        return false;
+    }
+    else
+    {
+        std::cout << "Sensor not connected!" << std::endl;
+        return false;
+    }
+
+}
+
+
 std::shared_ptr<Reco3D::RGBDCapture_t> Reco3D::IO::RGBDSensor_KinectVive::CaptureFrame()
 {
     std::shared_ptr<Reco3D::RGBDCapture_t> capture(new Reco3D::RGBDCapture_t());

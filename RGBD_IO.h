@@ -49,6 +49,7 @@ namespace Reco3D
 		public:
 			RGBDSensor_KinectVive(RGBDSensor_Config_KinectVive config);
 			~RGBDSensor_KinectVive();
+            bool SaveFrameToDisk();
 			std::shared_ptr<RGBDCapture_t> CaptureFrame() override;
 			ImagePose GetTrackerPose();
 			CameraPoseParameters ConstructCameraPose(ImagePose& imgPose);
