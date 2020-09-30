@@ -15,8 +15,13 @@ output_csv = sys.argv[2]
 # Extract image as array
 img = o3d.io.read_image(input_file)
 img_array = np.asarray(img)
+output = np.asarray(img_array[288]) # capture middle frame
 
-np.savetxt(output_csv, img_array, delimiter=',')
+#np.transpose(output)
+#output = output.transpose()
+
+np.savetxt(output_csv, output, delimiter=',', newline='\n')
+print(len(img_array))
 
 # print('img_array')
 # for row in img_array:
